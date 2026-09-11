@@ -1,0 +1,44 @@
+strict_tdd: false
+context: |
+  Fonamp is an Android native (Kotlin + Compose + Media3/ExoPlayer) multi-module project.
+  Detected markers: none (greenfield).
+  No reliable test runner was detected yet; verify testing manually before enabling strict TDD.
+  Unit tests: none.
+  Integration tests: none.
+  E2E tests: none.
+rules:
+  proposal:
+    require_problem_statement: true
+  spec:
+    require_acceptance_criteria: true
+  design:
+    require_tradeoffs: true
+  tasks:
+    protect_review_workload: true
+  apply:
+    test_command: "./gradlew test"
+  verify:
+    test_command: "./gradlew test"
+testing:
+  detected: "2026-09-10"
+  runner:
+    command: "./gradlew test"
+    framework: "Gradle test"
+  layers:
+    unit: ""
+    integration: ""
+    e2e: ""
+  commands:
+    unit: []
+    integration: []
+    e2e: []
+  coverage:
+    command: ""
+    commands: []
+quality:
+  lint: ""
+  lint_commands: []
+  typecheck: ""
+  typecheck_commands: []
+  format: ""
+  format_commands: []
