@@ -23,15 +23,23 @@ HITS=$(grep -rniE 'ads|admob|firebase|analytics|crashlytics' "$ROOT/gradle/libs.
 if [ -z "$HITS" ]; then pass "dependency audit: zero prohibited SDKs";
 else fail "prohibited SDK references found:"; echo "$HITS"; fi
 
-# 3. Debug APK exists and is < 40 MB
+# 3. Debug APK exists (monitored, no hard gate in v1) + release APK under 40 MB when present
+# Parent decision 2026-09-12: 40MB gate moved to RELEASE builds; debug is monitored.
 APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
 if [ -f "$APK" ]; then
   SIZE=$(stat -c%s "$APK")
-  MAX=$((40 * 1024 * 1024))
-  if [ "$SIZE" -lt "$MAX" ]; then pass "APK $(numfmt --to=iec "$SIZE") < 40 MB";
-  else fail "APK $(numfmt --to=iec "$SIZE") exceeds 40 MB"; fi
+  pass "debug APK present: $(numfmt --to=iec "$SIZE") (monitored, no hard gate in v1)";
 else
   fail "debug APK absent (run ./gradlew assembleDebug)"
+fi
+REL="$ROOT/app/build/outputs/apk/release/app-release.apk"
+if [ -f "$REL" ]; then
+  RSIZE=$(stat -c%s "$REL")
+  MAX=$((40 * 1024 * 1024))
+  if [ "$RSIZE" -lt "$MAX" ]; then pass "release APK $(numfmt --to=iec "$RSIZE") < 40 MB";
+  else fail "release APK $(numfmt --to=iec "$RSIZE") exceeds 40 MB"; fi
+else
+  pass "no release APK present (gate applies when the release pipeline exists)";
 fi
 
 # 4. Manifest permission allowlist (v1 max set only)
