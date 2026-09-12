@@ -191,3 +191,48 @@
 
 - Slices E–I untouched. No commits, no PRs, no pushes (per instructions).
   Stop after Slice D.
+
+## Slice E — `core/network` + `provider/radio` (source-contract Req 3, 4; radio Req 1, 2, 5, 6)
+
+- Attempt authority: `acquire` work-unit `slice-E`, `--max-changed-lines 2500`,
+  token `sha256:f007d9c7…` → state `proceed`. Settled on completion (see done-state below).
+- [x] RED — `MirrorPolicyTest.kt` (6 tests), `DirectoryCacheTest.kt` (4 tests),
+  `RadioBrowserSourceTest.kt` (6 tests), all MockWebServer-backed, zero real network.
+  RED evidence: `:core:network / :provider:radio:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `RadioBrowserClient/DirectoryCache/MirrorPolicy/
+  RadioBrowserSource/StationQuery` (impl did not exist yet).
+- [x] GREEN — 6 impl files in `core/network` per design §4 + 1 in `provider/radio`
+  per design §2. Slice A `NetworkScaffold`/`RadioScaffold` placeholders left in
+  place (tasks do not order their removal; harmless, as in Slices C–D).
+- Fixes during GREEN:
+  - `NetworkError.Unknown(cause)` hid `Throwable.cause` → renamed field to `error`.
+  - Converter import is Square's `retrofit2.converter.kotlinx.serialization` (catalog
+    artifact `com.squareup.retrofit2:converter-kotlinx-serialization`), not JakeWharton's.
+  - `provider/radio` needed its own `implementation(libs.media3.common)` (MediaItem in
+    the implemented interface) + `testImplementation` `robolectric`/`serialization-json`
+    (`streamOf` touches `android.os.Bundle`; `@Config(sdk=[34])` uses cached android-all).
+  - Test bug (not impl): url-less row is correctly dropped as unplayable — test now
+    asserts the drop plus nullable tolerance on the surviving row.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched,
+  Retrofit 2.11.0 / OkHttp 4.12.0 / serialization 1.8.1 per pins):
+  `:core:network:test :provider:radio:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `MirrorPolicyTest` 6/6, `DirectoryCacheTest` 4/4, `RadioBrowserSourceTest` 6/6,
+  0 failures/errors/skipped (debug; release rerun in full suite).
+  Full `./gradlew test` → BUILD SUCCESSFUL — no regressions.
+- Contract notes for later slices: index rows are navigation nodes (`stableId`
+  `country:<name>`/`tag:<name>`, empty `streamUri` — never play them, browse deeper);
+  genre resolves via the `stations/bytag` endpoint (directory has no genre listing);
+  `search` is cache-only (empty cache → `Ok(empty)`); click-count fires from
+  `streamOf` (swallowed); `DirectoryCache.clear()` never touches Room.
+- Files: `core/network/src/main/.../network/{NetworkError,RadioDtos,RadioBrowserApi,
+  MirrorPolicy,RadioBrowserClient,DirectoryCache}.kt`;
+  `core/network/src/test/.../network/{MirrorPolicyTest,DirectoryCacheTest}.kt`;
+  `provider/radio/src/main/.../radio/RadioBrowserSource.kt`;
+  `provider/radio/src/test/.../radio/RadioBrowserSourceTest.kt`;
+  `provider/radio/build.gradle.kts` (M: media3-common impl, robolectric +
+  serialization-json test deps).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices F–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice E.

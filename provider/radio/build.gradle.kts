@@ -32,9 +32,13 @@ android {
 dependencies {
     implementation(project(":provider:api"))
     implementation(project(":core:network"))
+    // MediaItem appears in the Source interface this module implements.
+    implementation(libs.media3.common)
     implementation(libs.coroutines.core)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.serialization.json)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.turbine)
     testImplementation(libs.coroutines.test)
