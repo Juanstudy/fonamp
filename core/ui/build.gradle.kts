@@ -47,6 +47,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     // Pause/Stop live in the extended set; still generic M3 icons, no custom art.
     implementation("androidx.compose.material:material-icons-extended")
+    // PR2 artwork: local thumbs via Coil (stable 2.x); null/error falls back to generic icons.
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

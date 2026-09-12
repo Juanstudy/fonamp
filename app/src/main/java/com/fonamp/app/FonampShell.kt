@@ -124,6 +124,7 @@ fun FonampRoot(
                                     ?: "Playing",
                                 subtitle = current?.mediaMetadata?.artist?.toString(),
                                 isPlaying = playerState.isPlaying,
+                                artworkUri = current?.mediaMetadata?.artworkUri?.toString(),
                                 source = if (playerState.isLive) {
                                     SourceBadgeKind.RADIO
                                 } else {
@@ -227,6 +228,7 @@ fun FonampRoot(
                     isPlaying = playerState.isPlaying,
                     onTogglePlayPause = player::togglePlayPause,
                     onClose = { showSheet = false },
+                    artworkUri = current?.mediaMetadata?.artworkUri?.toString(),
                     icyTitle = playerState.icyTitle,
                     isFavorite = currentStationUuid != null && favoriteIds.contains(currentStationUuid),
                     onToggleFavorite = if (playerState.isLive && current != null &&

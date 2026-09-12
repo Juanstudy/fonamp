@@ -1,12 +1,16 @@
 package com.fonamp.core.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -17,9 +21,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 
 /**
  * Slice C: persistent mini-player (design §7).
@@ -34,7 +44,55 @@ data class MiniPlayerState(
     val subtitle: String?,
     val isPlaying: Boolean,
     val source: SourceBadgeKind,
+    /** Local cover from MediaStore (PR1); null = no cover, show generic icon. */
+    val artworkUri: String? = null,
 )
+
+/**
+ * PR2: local cover thumb with generic-icon fallback.
+ *
+ * Shows [AsyncImage] when [artworkUri] is non-null; on null or load error
+ * shows [fallbackIcon]. Never crashes, never fabricates art.
+ */
+@Composable
+fun AlbumArtwork(
+    artworkUri: String?,
+    modifier: Modifier = Modifier,
+    size: Dp = 44.dp,
+    contentDescription: String = "Album artwork",
+    fallbackIcon: ImageVector = Icons.Filled.MusicNote,
+    fallbackContentDescription: String = "No album artwork",
+    imageTestTag: String = "artwork-image",
+    fallbackTestTag: String = "artwork-fallback",
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(RoundedCornerShape(4.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (artworkUri != null) {
+            // Coil keeps this node in the tree on error and draws the
+            // generic icon via the error painter: stable for tests,
+            // no crash and no fabricated art on device.
+            AsyncImage(
+                model = artworkUri,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                error = rememberVectorPainter(image = fallbackIcon),
+                modifier = Modifier
+                    .size(size)
+                    .testTag(imageTestTag),
+            )
+        } else {
+            Icon(
+                imageVector = fallbackIcon,
+                contentDescription = fallbackContentDescription,
+                modifier = Modifier.testTag(fallbackTestTag),
+            )
+        }
+    }
+}
 
 @Composable
 fun MiniPlayer(
@@ -54,6 +112,12 @@ fun MiniPlayer(
                 .padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            AlbumArtwork(
+                artworkUri = state.artworkUri,
+                size = 44.dp,
+                imageTestTag = "mini-artwork-image",
+                fallbackTestTag = "mini-artwork-fallback",
+            )
             IconButton(
                 modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
                 onClick = onTogglePlayPause,

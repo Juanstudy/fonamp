@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.unit.dp
 import org.junit.Rule
@@ -271,6 +272,7 @@ class UiStatesTest {
 
         rule.onNodeWithTag("player-error").assertIsDisplayed()
         rule.onNodeWithText("Stream unavailable").assertIsDisplayed()
+        rule.onNodeWithText("Retry", substring = true).performScrollTo()
         rule.onNodeWithText("Retry", substring = true).performClick()
         assert(retries == 1) { "expected one retry click, got $retries" }
     }

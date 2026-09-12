@@ -1,15 +1,19 @@
 package com.fonamp.core.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
@@ -40,6 +44,8 @@ fun PlayerSheet(
     onTogglePlayPause: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Local cover from mediaMetadata (PR1); null = no cover, show generic icon. */
+    artworkUri: String? = null,
     icyTitle: String? = null,
     isFavorite: Boolean = false,
     onToggleFavorite: (() -> Unit)? = null,
@@ -49,6 +55,8 @@ fun PlayerSheet(
     Column(
         modifier = modifier
             .testTag("player-sheet")
+            // PR2 hero can overflow small screens: keep error + controls reachable.
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -73,6 +81,19 @@ fun PlayerSheet(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
         )
+        // PR2 hero: real local cover or the generic icon, never fabricated.
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
+            AlbumArtwork(
+                artworkUri = artworkUri,
+                size = 200.dp,
+                fallbackIcon = Icons.Filled.MusicNote,
+                imageTestTag = "player-artwork-image",
+                fallbackTestTag = "player-artwork-fallback",
+            )
+        }
         if (subtitle != null) {
             Text(
                 text = subtitle,

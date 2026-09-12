@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fonamp.core.ui.AlbumArtwork
 import com.fonamp.core.ui.DeniedState
 import com.fonamp.core.ui.EmptyState
 import com.fonamp.core.ui.ErrorRetryState
@@ -152,7 +152,10 @@ private fun CollectionContent(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(Icons.Filled.MusicNote, contentDescription = null)
+                        AlbumArtwork(
+                            artworkUri = item.artworkUri,
+                            size = 48.dp,
+                        )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = item.title, style = MaterialTheme.typography.bodyLarge)
                             val detail = listOfNotNull(item.subtitle, item.album).joinToString(" · ")
@@ -208,7 +211,13 @@ private fun CollectionContent(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(Icons.Filled.Album, contentDescription = null)
+                        AlbumArtwork(
+                            // Albums stay List<String> (no model change):
+                            // cover = first song of the album, null = generic icon.
+                            artworkUri = state.songs.firstOrNull { it.album == name }?.artworkUri,
+                            size = 48.dp,
+                            fallbackIcon = Icons.Filled.Album,
+                        )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = name, style = MaterialTheme.typography.bodyLarge)
                             Text(
