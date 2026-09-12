@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fonamp — Wireframes v1 (static mockup)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee;
+         padding: 32px; }
+  h1 { text-align: center; margin-bottom: 8px; }
+  .sub { text-align: center; color: #999; margin-bottom: 32px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; }
+  .phone { width: 300px; background: #222; border: 3px solid #555; border-radius: 28px;
+           overflow: hidden; display: flex; flex-direction: column; height: 600px; }
+  .phone h2 { font-size: 14px; text-align: center; padding: 10px; background: #333;
+              color: #ffd166; }
+  .screen { flex: 1; min-height: 0; background: #121212; display: flex; flex-direction: column;
+            font-size: 13px; }
+  .topbar { padding: 12px; border-bottom: 1px solid #333; display: flex;
+            justify-content: space-between; align-items: center; font-weight: bold; }
+  .seg { display: flex; gap: 6px; padding: 8px 12px; }
+  .seg span { padding: 4px 10px; border-radius: 12px; background: #2a2a2a; color: #aaa; }
+  .seg span.on { background: #4a3aff; color: #fff; }
+  .filter { margin: 0 12px 4px; padding: 8px; border-radius: 8px; background: #222;
+            color: #777; border: 1px solid #333; }
+  .row { padding: 10px 12px; border-bottom: 1px solid #222; display: flex;
+         justify-content: space-between; align-items: center; }
+  .row small { color: #888; }
+  .heart { color: #ff5a5a; } .heart.o { color: #555; }
+  .badge { font-size: 10px; background: #333; border-radius: 4px; padding: 2px 6px;
+           color: #ffd166; }
+  .mini { flex-shrink: 0; padding: 10px 12px; background: #1e1e2e;
+          border-top: 1px solid #444; display: flex; justify-content: space-between;
+          align-items: center; }
+  .list { flex: 1; overflow-y: auto; min-height: 0; }
+      .tabs { display: flex; border-top: 1px solid #333; background: #1a1a1a; flex-shrink: 0; }
+  .tabs span { flex: 1; text-align: center; padding: 10px 0; font-size: 11px; color: #888; }
+  .tabs span.on { color: #fff; border-top: 2px solid #4a3aff; }
+  .state { margin: auto; text-align: center; color: #888; padding: 20px; }
+  .state .big { font-size: 32px; margin-bottom: 8px; }
+  .btn { display: inline-block; margin-top: 10px; padding: 6px 14px; border-radius: 8px;
+         background: #4a3aff; color: #fff; }
+  .sheet { margin: auto 12px 12px; background: #1e1e2e; border-radius: 16px; padding: 16px;
+           text-align: center; }
+  .art { width: 120px; height: 120px; background: #333; border-radius: 12px; margin: 8px auto;
+         display: flex; align-items: center; justify-content: center; font-size: 40px; }
+  .ctrl { font-size: 24px; margin: 10px 0; letter-spacing: 12px; }
+  .err { background: #3a1a1a; color: #ff9999; border-radius: 8px; padding: 8px; margin-top: 8px;
+         font-size: 12px; }
+  .set { padding: 12px; border-bottom: 1px solid #222; }
+  .set small { color: #888; display: block; margin-top: 4px; }
+</style>
+</head>
+<body>
+<h1>Fonamp — Wireframes v1</h1>
+<p class="sub">Static HTML mockup · mirrors docs/05-wireframes.md · no code, for review only</p>
+<div class="grid">
+
+<div class="phone"><h2>1 · Collection</h2><div class="screen">
+  <div class="topbar"><span>Fonamp</span><span>🔍</span></div>
+  <div class="seg"><span class="on">Songs</span><span>Artists</span><span>Albums</span></div>
+  <div class="list">
+      <div class="row"><span>▶ Midnight Drive — Neon Coast<br><small>3:42</small></span></div>
+  <div class="row"><span>▶ Solar Wind — Aerolitos<br><small>4:01</small></span></div>
+  <div class="row"><span>▶ Río Manso — Los Pájaros<br><small>2:57</small></span></div>
+      </div>
+      <div class="mini"><span>♪ Solar Wind — Aerolitos</span><span>⏸</span></div>
+  <div class="tabs"><span class="on">Collection</span><span>Radio</span><span>♥Fav</span><span>⚙Set</span></div>
+</div></div>
+
+<div class="phone"><h2>2 · Radio Discover</h2><div class="screen">
+  <div class="topbar"><span>Radio</span><span>↻</span></div>
+  <div class="filter">filter country/genre…</div>
+  <div class="seg"><span class="on">Countries</span><span>Genres &amp; tags</span></div>
+  <div class="list">
+      <div class="row"><span>🇦🇷 Argentina</span><small>1.2k</small></div>
+  <div class="row"><span>🇩🇪 Germany</span><small>3.4k</small></div>
+  <div class="row"><span>🇯🇵 Japan</span><small>980</small></div>
+  <div class="row"><span>🇺🇾 Uruguay</span><small>310</small></div>
+      </div>
+      <div class="tabs"><span>Collection</span><span class="on">Radio</span><span>♥Fav</span><span>⚙Set</span></div>
+</div></div>
+
+<div class="phone"><h2>3 · Station list</h2><div class="screen">
+  <div class="topbar"><span>← Argentina</span><span></span></div>
+  <div class="list">
+      <div class="row"><span>▶ Radio Mitre <small>128k</small></span><span class="heart o">♡</span></div>
+  <div class="row"><span>▶ La 100 <small>64k</small></span><span class="heart">♥</span></div>
+  <div class="row"><span>▶ Vorterix <small>128k</small></span><span class="heart o">♡</span></div>
+      </div>
+      <div class="mini"><span>♪ La 100 <span class="badge">radio</span></span><span>⏸</span></div>
+  <div class="tabs"><span>Collection</span><span class="on">Radio</span><span>♥Fav</span><span>⚙Set</span></div>
+</div></div>
+
+<div class="phone"><h2>4 · Favorites</h2><div class="screen">
+  <div class="topbar"><span>Favorites</span><span></span></div>
+  <div class="list">
+      <div class="row"><span>▶ La 100 <small>Argentina</small></span><span>▶ ✕</span></div>
+  <div class="row"><span>▶ NTS Radio <small>UK</small></span><span>▶ ✕</span></div>
+      </div>
+      <div class="tabs"><span>Collection</span><span>Radio</span><span class="on">♥Fav</span><span>⚙Set</span></div>
+</div></div>
+
+<div class="phone"><h2>5 · Settings</h2><div class="screen">
+  <div class="topbar"><span>Settings</span><span></span></div>
+  <div class="list">
+      <div class="set">Appearance<small>Theme: System / Light / Dark</small></div>
+  <div class="set">Storage<small>Directory cache · Used 12 MB · [clear]</small></div>
+  <div class="set">About<small>Version 0.1 · Licenses · Source</small></div>
+  </div>
+      <div class="tabs"><span>Collection</span><span>Radio</span><span>♥Fav</span><span class="on">⚙Set</span></div>
+</div></div>
+
+<div class="phone"><h2>6 · Full player</h2><div class="screen">
+  <div class="sheet">
+    <div>— drag handle —</div>
+    <div class="art">🎵</div>
+    <b>La 100</b><br><small>Buenos Aires · <span class="badge">radio</span></small><br>
+    <small style="color:#888">Now: Rock &amp; Pop Classics</small>
+    <div class="ctrl">⏮ ⏸ ⏭ <span class="heart">♥</span></div>
+    <div class="err">⚠ Stream failed · <u>retry</u></div>
+  </div>
+</div></div>
+
+<div class="phone"><h2>7 · States</h2><div class="screen">
+  <div class="state"><div class="big">📡</div>No connection<br><small>Cached stations below</small><br><span class="btn">retry</span></div>
+  <div class="tabs"><span>Collection</span><span class="on">Radio</span><span>♥Fav</span><span>⚙Set</span></div>
+</div></div>
+
+</div>
+</body>
+</html>

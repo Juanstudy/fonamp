@@ -63,7 +63,7 @@ size/license impact. Reviewer (founder) approves. No drive-by dependencies.
 - `minSdk 29` (Android 10+, decided), `target/compileSdk 35`, `usesCleartextTraffic=true` (third-party radio streams are http).
 - Commands: `./gradlew test`, `./gradlew assembleDebug`, `./gradlew installDebug`.
 
-## 7. Open technical questions
-1. R8/minify + app bundle posture for release (later; debug APK fine for v1).
+## 7. Open technical questions (resolved for v1 — 2026-09-12)
+1. R8/minify + app bundle posture — RESOLVED: deferred post-v1 (debug APK, no minify for v1 dev).
 2. Artwork cache strategy — RESOLVED: deferred to v2 (generic icons in v1).
-3. Player queue persistence across process death — v1 best-effort or v2?
+3. Player queue persistence across process death — RESOLVED: best-effort restore in v1, no guarantees.

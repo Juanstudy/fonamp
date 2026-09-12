@@ -33,12 +33,10 @@ Mini-player (artwork/icon, title, play/pause, close) → tap expands sheet (artw
 title/artist, source badge [radio/local], ICY metadata if radio, queue controls if
 local, heart, error banner with retry when failing).
 
-## 4. Design system (v1 seed)
-- Material3 baseline, light + dark themes from day one (CUS-1).
-- Semantic color roles (never hardcoded hex in features); typography scale fixed.
-- Shared state components: `Loading / Empty / Offline / Denied / ErrorRetry`.
-- Iconography: rounded, 24dp; touch targets ≥48dp.
-- Motion: standard easing, no custom physics in v1.
+## 4. Design system (v1: Material3 defaults — decided 2026-09-12)
+- Material3 default baseline, light + dark via system setting (CUS-1 satisfied with defaults, no custom tokens in v1).
+- No custom color roles, typography scale, or iconography work in v1 — full visual identity deferred to v2.
+- Shared state components still required: `Loading / Empty / Offline / Denied / ErrorRetry` (behavior + layout, default styling).
 
 ## 5. Screen inventory (v1)
 - Collection (list + tabs songs/artists/albums + search if PRD-Q2 says v1)

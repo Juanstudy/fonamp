@@ -70,9 +70,9 @@ Room favorites, Compose UI. This PRD carries those learnings forward — pattern
 - Dependency allowlist: ExoPlayer/Media3, Room, Retrofit/Moshi, Hilt, Coroutines/Flow, Compose BOM + testing libs. Anything else needs a written reason.
 - No ad/analytics/crash SDKs. No Firebase.
 
-## 5. Open questions (to resolve before v1 spec)
-1. Shuffle/repeat in v1 player or v2?
-2. Collection search in v1 or v2?
-3. Favorites sync (if ever) — local-only confirmed for v1; sync model TBD post-v1.
-4. Download source scope for v4 (legal/ToS).
-5. Release signing / distribution channel (F-Droid? Play? APK direct?) — needed before any public build, not for v1 dev.
+## 5. Open questions (resolved for v1 — 2026-09-12)
+1. Shuffle/repeat — RESOLVED: no shuffle/repeat in v1 (local next/prev, radio play/stop; shuffle deferred to v2).
+2. Collection search — RESOLVED: stretch goal, simple title/artist/album filter only if cheap; cut if costly (otherwise v2).
+3. Favorites sync — RESOLVED: local-only for v1 (Room, no sync); sync/export model TBD post-v1.
+4. Download source scope for v4 (legal/ToS) — OPEN, deferred to v4 proposal.
+5. Release signing / distribution — RESOLVED for v1 dev: direct APK only; F-Droid/Play deferred to a future public build.
