@@ -5,10 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import com.fonamp.core.database.FavoriteStation
 import com.fonamp.provider.api.AudioItem
@@ -172,12 +174,14 @@ class RadioScreensTest {
                 onRefresh = { refreshed++ },
             )
         }
-        compose.onNodeWithText("Germany").assertIsDisplayed()
+        // The Curadas section sits above the filter: cached rows scroll into view.
         compose.onNodeWithTag("offline-card").assertIsDisplayed()
-        compose.onNodeWithText("Retry").performClick()
-        assertEquals(1, refreshed)
         compose.onNodeWithTag("refresh-button").performClick()
+        assertEquals(1, refreshed)
+        compose.onNodeWithText("Retry").performClick()
         assertEquals(2, refreshed)
+        compose.onNodeWithTag("discover-list").performScrollToNode(hasText("Germany"))
+        compose.onNodeWithText("Germany").assertIsDisplayed()
     }
 
     @Test
@@ -241,5 +245,74 @@ class RadioScreensTest {
         }
         compose.onNodeWithText("No favorites yet").assertIsDisplayed()
         compose.onNodeWithText("Undo").assertDoesNotExist()
+    }
+
+    @Test
+    fun `curated section shows tiles and preset rows with play plus heart`() {
+        var opened: BrowseQuery? = null
+        var played: AudioItem? = null
+        var toggled: AudioItem? = null
+        val curated = listOf(
+            AudioItem(
+                sourceId = "radio-browser",
+                stableId = "uuid-groove",
+                title = "Groove Salad",
+                streamUri = "https://example.com/groove.mp3",
+                stationUuid = "uuid-groove",
+            ),
+        )
+        compose.setContent {
+            DiscoverScreen(
+                state = discover().copy(curated = curated),
+                onQueryChange = {},
+                onSelectSegment = {},
+                onOpenSelection = { opened = it },
+                onRefresh = {},
+                onPlay = { played = it },
+                onToggleFavorite = { toggled = it },
+            )
+        }
+        compose.onNodeWithTag("curated-section").assertIsDisplayed()
+        compose.onNodeWithText("Curadas").assertIsDisplayed()
+        // Tiles carry zero stream URLs — only tag strings (Req 11 scenario 2).
+        CuratedTags.TILES.forEach { tile ->
+            compose.onNodeWithTag("curated-tag-${tile.tag}").assertIsDisplayed()
+        }
+        // Lofi tile delegates to the existing browse(tag) path.
+        compose.onNodeWithTag("curated-tag-lofi").performClick()
+        assertEquals(BrowseQuery(tag = "lofi"), opened)
+        // Preset row reuses the same play + heart testTags.
+        compose.onNodeWithText("Groove Salad").assertIsDisplayed()
+        compose.onNodeWithTag("station-play-uuid-groove").performClick()
+        assertEquals("Groove Salad", played?.title)
+        compose.onNodeWithTag("station-fav-uuid-groove").performClick()
+        assertEquals("Groove Salad", toggled?.title)
+    }
+
+    @Test
+    fun `curated preset without uuid shows no heart`() {
+        compose.setContent {
+            DiscoverScreen(
+                state = discover().copy(
+                    curated = listOf(
+                        AudioItem(
+                            sourceId = "radio-browser",
+                            stableId = "curated:night-wave",
+                            title = "Night Wave",
+                            streamUri = "https://example.com/night.mp3",
+                            stationUuid = null,
+                        ),
+                    ),
+                ),
+                onQueryChange = {},
+                onSelectSegment = {},
+                onOpenSelection = {},
+                onRefresh = {},
+            )
+        }
+        compose.onNodeWithTag("curated-section").assertIsDisplayed()
+        compose.onNodeWithText("Night Wave").assertIsDisplayed()
+        compose.onNodeWithTag("station-play-curated:night-wave").assertIsDisplayed()
+        compose.onNodeWithTag("station-fav-null").assertDoesNotExist()
     }
 }

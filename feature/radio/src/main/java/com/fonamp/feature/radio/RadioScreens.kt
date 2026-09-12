@@ -71,79 +71,183 @@ fun DiscoverScreen(
     onOpenSelection: (BrowseQuery) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    onPlay: (AudioItem) -> Unit = {},
+    onToggleFavorite: (AudioItem) -> Unit = {},
 ) {
+    // Single scrolling container (Req 9): the Curadas section sits on top of
+    // the filter/tabs/index rows, so small screens scroll instead of squeezing
+    // the station list to zero height. Order: Curadas, filter, tabs, list.
     PullToRefreshBox(
         isRefreshing = state.refreshing,
         onRefresh = onRefresh,
         modifier = modifier.fillMaxSize(),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextField(
-                    value = state.query,
-                    onValueChange = onQueryChange,
-                    placeholder = { Text("Filter countries or tags") },
-                    leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                    singleLine = true,
-                    modifier = Modifier.weight(1f).testTag("filter-field"),
+        LazyColumn(modifier = Modifier.fillMaxSize().testTag("discover-list")) {
+            item(key = "curated") {
+                CuratedSection(
+                    curated = state.curated,
+                    favorites = state.favorites,
+                    onOpenTag = { tag -> onOpenSelection(BrowseQuery(tag = tag)) },
+                    onPlay = onPlay,
+                    onToggleFavorite = onToggleFavorite,
                 )
-                IconButton(onClick = onRefresh, modifier = Modifier.testTag("refresh-button")) {
-                    Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+            }
+            item(key = "filter") {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextField(
+                        value = state.query,
+                        onValueChange = onQueryChange,
+                        placeholder = { Text("Filter countries or tags") },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f).testTag("filter-field"),
+                    )
+                    IconButton(onClick = onRefresh, modifier = Modifier.testTag("refresh-button")) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+                    }
                 }
             }
-            val tabs = listOf(DiscoverSegment.Countries to "Countries", DiscoverSegment.GenresTags to "Genres & tags")
-            TabRow(selectedTabIndex = tabs.indexOfFirst { it.first == state.segment }) {
-                tabs.forEach { (segment, label) ->
-                    Tab(
-                        selected = segment == state.segment,
-                        onClick = { onSelectSegment(segment) },
-                        text = { Text(label) },
-                        modifier = Modifier.testTag(
-                            if (segment == DiscoverSegment.Countries) "segment-countries" else "segment-tags",
-                        ),
-                    )
+            item(key = "tabs") {
+                val tabs = listOf(DiscoverSegment.Countries to "Countries", DiscoverSegment.GenresTags to "Genres & tags")
+                TabRow(selectedTabIndex = tabs.indexOfFirst { it.first == state.segment }) {
+                    tabs.forEach { (segment, label) ->
+                        Tab(
+                            selected = segment == state.segment,
+                            onClick = { onSelectSegment(segment) },
+                            text = { Text(label) },
+                            modifier = Modifier.testTag(
+                                if (segment == DiscoverSegment.Countries) "segment-countries" else "segment-tags",
+                            ),
+                        )
+                    }
                 }
             }
             if (state.offline) {
-                OfflineState(
-                    onRetry = onRefresh,
-                    cacheNote = "Showing cached stations",
+                item(key = "offline") {
+                    OfflineState(
+                        onRetry = onRefresh,
+                        cacheNote = "Showing cached stations",
+                    )
+                }
+            }
+            items(state.visible, key = { it.stableId }) { row ->
+                val isCountry = row.stableId.startsWith("country:")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onOpenSelection(
+                                if (isCountry) BrowseQuery(country = row.title)
+                                else BrowseQuery(tag = row.title),
+                            )
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        if (isCountry) Icons.Filled.Public else Icons.Filled.Tag,
+                        contentDescription = null,
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(text = row.title, style = MaterialTheme.typography.bodyLarge)
+                        row.subtitle?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Change `curated-radio-stations` (Req 9, 11, D2): "Curadas" section on top of
+ * Discover — pinned tag tiles (existing `browse(BrowseQuery(tag = …))` path,
+ * 24h cache + mirror fallback) plus curated preset rows reusing the same row
+ * play + heart testTags as [StationsScreen]. No name-search control (Req 12).
+ */
+@Composable
+fun CuratedSection(
+    curated: List<AudioItem>,
+    favorites: Set<String>,
+    onOpenTag: (String) -> Unit,
+    onPlay: (AudioItem) -> Unit,
+    onToggleFavorite: (AudioItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().testTag("curated-section"),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Curadas",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            SourceBadge(kind = SourceBadgeKind.RADIO)
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CuratedTags.TILES.forEach { tile ->
+                Text(
+                    text = tile.label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier
+                        .testTag("curated-tag-${tile.tag}")
+                        .clickable { onOpenTag(tile.tag) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                 )
             }
-            LazyColumn(modifier = Modifier.fillMaxSize().testTag("discover-list")) {
-                items(state.visible, key = { it.stableId }) { row ->
-                    val isCountry = row.stableId.startsWith("country:")
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onOpenSelection(
-                                    if (isCountry) BrowseQuery(country = row.title)
-                                    else BrowseQuery(tag = row.title),
-                                )
-                            }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        }
+        curated.forEach { station ->
+            val uuid = station.stationUuid
+            val rowKey = uuid ?: station.stableId
+            val isFavorite = uuid != null && favorites.contains(uuid)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onPlay(station) }
+                    .testTag("station-play-$rowKey")
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(Icons.Filled.Radio, contentDescription = null)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = station.title, style = MaterialTheme.typography.bodyLarge)
+                    stationMeta(station)?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                // D3: presets without stationUuid are not favoritable — no heart.
+                if (uuid != null) {
+                    IconButton(
+                        onClick = { onToggleFavorite(station) },
+                        modifier = Modifier.testTag("station-fav-$uuid"),
                     ) {
                         Icon(
-                            if (isCountry) Icons.Filled.Public else Icons.Filled.Tag,
-                            contentDescription = null,
+                            if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = if (isFavorite) "Unfavorite" else "Favorite",
                         )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(text = row.title, style = MaterialTheme.typography.bodyLarge)
-                            row.subtitle?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -341,6 +445,8 @@ fun RadioRouteScreen(
             onOpenSelection = onOpenSelection,
             onRefresh = onRefresh,
             modifier = modifier,
+            onPlay = onPlay,
+            onToggleFavorite = onToggleFavorite,
         )
         is RadioUiState.Stations -> StationsScreen(
             state = state,
