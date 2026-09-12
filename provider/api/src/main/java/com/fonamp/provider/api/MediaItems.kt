@@ -1,5 +1,6 @@
 package com.fonamp.provider.api
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
@@ -24,6 +25,7 @@ fun localMediaItem(item: AudioItem): MediaItem {
         .setIsBrowsable(false)
         .setExtras(extras)
     item.durationMs?.let { metadata.setDurationMs(it) }
+    item.artworkUri?.let { metadata.setArtworkUri(Uri.parse(it)) }
     return MediaItem.Builder()
         .setMediaId("local:${item.stableId}")
         .setUri(item.streamUri)

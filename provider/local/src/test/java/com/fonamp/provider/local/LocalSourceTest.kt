@@ -40,6 +40,7 @@ class LocalSourceTest {
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.ALBUM_ID,
         )
 
         override fun query(
@@ -72,6 +73,7 @@ class LocalSourceTest {
             MediaStore.Audio.Media.ARTIST to "Ada",
             MediaStore.Audio.Media.ALBUM to "Metro",
             MediaStore.Audio.Media.DURATION to 183_000L,
+            MediaStore.Audio.Media.ALBUM_ID to 101L,
         ),
         mapOf(
             MediaStore.Audio.Media._ID to 12L,
@@ -79,6 +81,7 @@ class LocalSourceTest {
             MediaStore.Audio.Media.ARTIST to "Ada",
             MediaStore.Audio.Media.ALBUM to "Metro",
             MediaStore.Audio.Media.DURATION to 201_000L,
+            MediaStore.Audio.Media.ALBUM_ID to 101L,
         ),
     )
 
@@ -112,6 +115,12 @@ class LocalSourceTest {
         // Radio-only fields stay absent (never fabricated).
         assertNull(first.bitrate)
         assertNull(first.codec)
+        assertEquals(
+            ContentUris.withAppendedId(
+                MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, 101L
+            ).toString(),
+            first.artworkUri,
+        )
     }
 
     @Test
@@ -123,6 +132,7 @@ class LocalSourceTest {
                 MediaStore.Audio.Media.ARTIST to null,
                 MediaStore.Audio.Media.ALBUM to null,
                 MediaStore.Audio.Media.DURATION to null,
+                MediaStore.Audio.Media.ALBUM_ID to null,
             )
         )
         val source = sourceOf(FakeReader(rows))
@@ -131,6 +141,7 @@ class LocalSourceTest {
         assertNull(items[0].subtitle)
         assertNull(items[0].album)
         assertNull(items[0].durationMs)
+        assertNull(items[0].artworkUri)
         assertTrue(items[0].streamUri.startsWith("content://"))
     }
 
@@ -173,6 +184,38 @@ class LocalSourceTest {
         val result = source.browse(BrowseQuery())
         assertTrue(result is SourceResult.Fail)
         assertTrue((result as SourceResult.Fail).e is SourceError.Unknown)
+    }
+
+    @Test
+    fun `artworkUri derives from album id and propagates to mediaMetadata`() = runTest {
+        val source = sourceOf(FakeReader(fullRows))
+        val item = (source.browse(BrowseQuery()) as SourceResult.Ok).v.first()
+        assertEquals(
+            ContentUris.withAppendedId(
+                MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, 101L
+            ).toString(),
+            item.artworkUri,
+        )
+        val media = source.streamOf(item)
+        assertEquals(item.artworkUri, media.mediaMetadata.artworkUri.toString())
+    }
+
+    @Test
+    fun `artworkUri absent without album id propagates as null artwork`() = runTest {
+        val rows = listOf(
+            mapOf(
+                MediaStore.Audio.Media._ID to 7L,
+                MediaStore.Audio.Media.TITLE to "Untagged",
+                MediaStore.Audio.Media.ARTIST to null,
+                MediaStore.Audio.Media.ALBUM to null,
+                MediaStore.Audio.Media.DURATION to null,
+                MediaStore.Audio.Media.ALBUM_ID to null,
+            )
+        )
+        val source = sourceOf(FakeReader(rows))
+        val item = (source.browse(BrowseQuery()) as SourceResult.Ok).v.first()
+        assertNull(item.artworkUri)
+        assertNull(source.streamOf(item).mediaMetadata.artworkUri)
     }
 
     @Test

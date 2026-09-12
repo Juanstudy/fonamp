@@ -26,7 +26,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class MediaItemMapperTest {
 
-    private fun localShaped(id: String): MediaItem {
+    private fun localShaped(id: String, artworkUri: String? = null): MediaItem {
         val extras = Bundle().apply {
             putString("source_id", "local")
             putString("stable_id", id)
@@ -40,6 +40,7 @@ class MediaItemMapperTest {
                     .setTitle("Song")
                     .setArtist("Artist")
                     .setAlbumTitle("Album")
+                    .setArtworkUri(artworkUri?.let { android.net.Uri.parse(it) })
                     .setIsPlayable(true)
                     .setIsBrowsable(false)
                     .setExtras(extras)
@@ -108,5 +109,18 @@ class MediaItemMapperTest {
         assertNull(media.sourceId())
         assertNull(media.stableId())
         assertNull(media.stationUuid())
+    }
+
+    @Test
+    fun `local shaped item carries artwork uri when album art exists`() {
+        val art = "content://media/external/audio/albumart/101"
+        val media = localShaped("11", artworkUri = art)
+        assertEquals(art, media.mediaMetadata.artworkUri.toString())
+    }
+
+    @Test
+    fun `local shaped item has null artwork when album art is absent`() {
+        val media = localShaped("7")
+        assertNull(media.mediaMetadata.artworkUri)
     }
 }

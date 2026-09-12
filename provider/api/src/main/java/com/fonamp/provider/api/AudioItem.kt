@@ -10,6 +10,8 @@ package com.fonamp.provider.api
  * @param album local only; null for radio
  * @param durationMs local only; null for radio (live stream)
  * @param streamUri local: content://…; radio: resolved stream url
+ * @param artworkUri local only: content://media/external/audio/albumart/<albumId>;
+ *   null when the track has no album row (never fabricated)
  * @param bitrate bitrate reported by the directory, when present
  * @param codec codec reported by the directory, when present
  */
@@ -21,6 +23,7 @@ data class AudioItem(
     val album: String? = null,
     val durationMs: Long? = null,
     val streamUri: String,
+    val artworkUri: String? = null,
     val bitrate: Int? = null,
     val codec: String? = null,
     val stationUuid: String? = null,

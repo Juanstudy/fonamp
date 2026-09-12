@@ -24,10 +24,11 @@ import kotlinx.coroutines.withContext
  * `browse(BrowseQuery())` result (design §2). [search] is a client-side
  * title/artist/album filter over the same single read.
  *
- * Metadata honesty: absent artist/album/duration stay null (never
+ * Metadata honesty: absent artist/album/duration/artwork stay null (never
  * fabricated); bitrate/codec are always null for local. A missing title
  * falls back to the display label `"Unknown title"` (the row is still
- * playable, so it is kept, not dropped).
+ * playable, so it is kept, not dropped). Artwork is the album-art content
+ * URI derived from ALBUM_ID — null when the track carries no album id.
  */
 class LocalSource(
     private val reader: MediaStoreReader,
@@ -77,6 +78,7 @@ class LocalSource(
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.DURATION,
+            MediaStore.Audio.Media.ALBUM_ID,
         )
         reader.query(
             uri,
@@ -90,6 +92,7 @@ class LocalSource(
             val artistCol = cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST)
             val albumCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM)
             val durationCol = cursor.getColumnIndex(MediaStore.Audio.Media.DURATION)
+            val albumIdCol = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)
             if (idCol == -1) return emptyList()
             return buildList {
                 while (cursor.moveToNext()) {
@@ -107,6 +110,14 @@ class LocalSource(
                                 null
                             },
                             streamUri = ContentUris.withAppendedId(uri, audioId).toString(),
+                            artworkUri = if (albumIdCol != -1 && !cursor.isNull(albumIdCol)) {
+                                ContentUris.withAppendedId(
+                                    MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI,
+                                    cursor.getLong(albumIdCol),
+                                ).toString()
+                            } else {
+                                null
+                            },
                         )
                     )
                 }
