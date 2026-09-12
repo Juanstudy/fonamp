@@ -97,3 +97,49 @@
 ## Remaining (explicitly out of scope for this slice)
 
 - Slices C–I untouched. No commits, no PRs, no pushes (per instructions).
+
+## Slice C — `core/ui` design system + shared states (scaffold Req 4, 5, 7)
+
+- Attempt authority: prior `slice-C` attempt (ordinal 3) was still `running` with
+  partial work on disk and no result. `acquire slice-C-retry` returned
+  `blocked/active_attempt` with continuation token
+  `sha256:cda01acc…`; re-acquired with `--token` → state `proceed`.
+  Token `sha256:cda01acc564fcb91ea273cddf0e6082d765b24f3349da6457752314d464faf83`.
+  Settled on completion (see done-state below).
+- [x] RED — `core/ui/src/test/.../UiStatesTest.kt` (17 behavior tests, Robolectric
+  `@Config(sdk=[34])`, `createComposeRule`): Loading shimmer rows never-blank +
+  dark, Empty message+hint + dark, Offline card + retry-callback + dark, Denied
+  why + grant-again + settings deep-link, ErrorRetry message + retry, MiniPlayer
+  48dp play/pause + close targets with content descriptions + paused Play state,
+  PlayerSheet skeleton (title/badge/close) + error-banner retry, SourceBadge
+  radio|local, light/dark render of all states, MiniPlayer state restoration.
+  (RED pre-existed as partial work with impl present, so per instructions the
+  gate is GREEN-till-proven: forced rerun green, no impl fix needed.)
+- [x] GREEN — 5 impl files per design §7 + docs/03-design.md §4 (M3 DEFAULTS only,
+  no custom tokens): `FonampTheme.kt` (`lightColorScheme()`/`darkColorScheme()`
+  defaults), `UiStates.kt` (`LoadingState` static skeleton rows — animated shimmer
+  deferred to v2 visual pass, documented in KDoc; `EmptyState` message+hint,
+  `OfflineState` card + Retry + cacheNote slot, `DeniedState` why + Grant again +
+  Open-settings slot, `ErrorRetryState`), `MiniPlayer.kt` (`MiniPlayerState` +
+  48dp `sizeIn` targets, Pause/Play/Close-player descriptions, tap-to-expand),
+  `PlayerSheet.kt` (title/subtitle/badge/ICY line/favorite toggle/error+retry;
+  NO shuffle/repeat/speed/sleep), `SourceBadge.kt` (own `SourceBadgeKind`
+  RADIO|LOCAL enum — keeps core→third-party-only rule, no `provider/api` dep).
+  `core/ui/build.gradle.kts`: `ui-test-junit4` + `ui-test-manifest`
+  (debug+release) test deps. Slice A `UiScaffold.kt` placeholder left in place
+  (harmless, superseded docs updated by later slices if desired).
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched):
+  `./gradlew :core:ui:test --rerun-tasks` → BUILD SUCCESSFUL in 36s —
+  `UiStatesTest` 17/17 debug + 17/17 release, `UiScaffoldTest` 1/1 ×2,
+  0 failures, 0 errors, 0 skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL (507 tasks) — 28 classes,
+  **76 tests, 0 failures, 0 errors, 0 skipped**
+  (core/ui 36, provider/api 18, 10 modules ×2 smoke).
+- Files: `core/ui/src/main/.../ui/{FonampTheme,UiStates,MiniPlayer,PlayerSheet,
+  SourceBadge}.kt`; `core/ui/src/test/.../ui/UiStatesTest.kt`;
+  `core/ui/build.gradle.kts` (M).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices D–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice C.

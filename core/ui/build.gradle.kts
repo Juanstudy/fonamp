@@ -31,6 +31,11 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -38,7 +43,18 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
+    // Generic M3 icons only (no custom iconography in v1, docs/03-design.md §4).
+    implementation("androidx.compose.material:material-icons-core")
+    // Pause/Stop live in the extended set; still generic M3 icons, no custom art.
+    implementation("androidx.compose.material:material-icons-extended")
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    // Compose behavior-test harness (BOM-managed versions; direct coordinates
+    // keep the single version source in gradle/libs.versions.toml untouched).
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    // Manifest-only stub declaring ComponentActivity so Robolectric resolves it.
+    // Needed in both variants: unit tests run for debug AND release.
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    releaseImplementation("androidx.compose.ui:ui-test-manifest")
 }
