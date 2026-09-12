@@ -406,3 +406,99 @@
 
 - Slices H–I untouched. No commits, no PRs, no pushes (per instructions).
   Stop after Slice G.
+
+    ## Slice H — `feature/radio` discover + stations + favorites (radio Req 1–6; player Req 5)
+
+    - Attempt authority: `acquire` work-unit `slice-H`, `--max-changed-lines 2500`,
+      token `sha256:08ca390b…` → state `proceed`. (Untracked planning files
+      `design.md`/`specs/`/`tasks.md` pre-existed; acquired with
+      `--untracked-scope=exclude`.) Settle on completion.
+    - [x] RED — `RadioViewModelTest.kt` (13 Robolectric `@Config(sdk=[34])`
+      Turbine tests: fresh-cache zero-network serve, Empty, ErrorRetry,
+      stale-shown-then-replaced, failed-refresh keeps stale + Offline card +
+      retry-without-clearing-cache, local filter with zero per-keystroke
+      browse calls, segment switch without network, 3-tap play raises live
+      radio queue, index rows never played, favorite round-trip + restart,
+      index rows not favoritable, station Error with selection + back,
+      `search` never called), `FavoritesViewModelTest.kt` (6 tests: Empty→
+      Content, remove→undo restores, 10s undo expiry, restart persistence,
+      play raises live radio item, no-op undo), `RadioScreensTest.kt`
+      (7 Compose behavior tests: index rows + counts + local filter,
+      segment callback, bitrate/codec honesty + play/heart/radio badge,
+      Offline card + retry + refresh, Error retry, favorites play/remove +
+      undo snackbar, empty favorites; no screenshot tests).
+      RED evidence: `:feature:radio:compileDebugUnitTestKotlin FAILED`,
+      `Unresolved reference` for `RadioViewModel/FavoritesViewModel/
+      RadioUiState/FavoritesUiState/DiscoverScreen/…` (impl did not exist yet).
+    - [x] GREEN — 3 impl files per radio Req 1–6 + design §4/§7. Slice A
+      `RadioUiScaffold` placeholder left in place (tasks do not order removal;
+      harmless, as in Slices C–G).
+    - `RadioViewModel.kt` (plain class + injected scope, Slice F precedent;
+      deps only `Source`/`FavoriteDao`/`PlayerManager`/`DirectoryCache`):
+      Discover (Countries | Genres&tags + local text filter, zero source
+      calls per keystroke) + Stations (name + bitrate/codec via honest
+      mapping, generic icons in UI) + Empty/Error; fresh cache serves with
+      zero network, stale rows show immediately then fetch replaces, failed
+      fetch keeps stale with `offline=true` + retry (never clears cache);
+      `playStation` refuses empty-`streamUri` index rows (Slice E contract)
+      else `PlayerManager.playSingle(source.streamOf(..))`;
+      `toggleFavorite` refuses rows without `stationUuid` else Room
+      upsert/delete; favorites observed from DAO (restart persistence);
+      `refreshing` flag drives the pull-to-refresh indicator and keeps
+      retry emissions deterministic; `search()` is never called (Req 6).
+    - `FavoritesViewModel.kt`: Room-backed `Empty/Content`, `remove` holds
+      the full row in `pendingUndo` with a 10s expiry (`UNDO_WINDOW_MS`,
+      re-upsert restores), `play` maps `FavoriteStation → AudioItem →
+      `playSingle`` (blank urls never play). Stations-only by construction
+      (DAO stores `FavoriteStation` rows only).
+    - `RadioScreens.kt`: stateless `DiscoverScreen`/`StationsScreen`/
+      `FavoritesScreen` on shared `core/ui` states (`Loading/Empty/Offline/
+      ErrorRetry`, `SourceBadge(RADIO)`), `PullToRefreshBox` + explicit
+      refresh button, 1-tap play + heart with `station-play/fav-<uuid>`
+      testTags, favorites remove + Indefinite snackbar with Undo;
+      `RadioRouteScreen` dispatcher + `DiscoverRoute`/`FavoritesRoute`
+      stateful entries for Slice I wiring. No tops/random/name-search
+      control on any surface (Req 6).
+    - Fixes during GREEN:
+      - Test classpath needed catalog-pinned `serialization-json` impl
+        (`DirectoryCache` signatures expose `Json`), `media3-common` impl
+        (Slice F precedent), `lifecycle-runtime-compose` impl (routes),
+        material-icons core+extended (generic icons), ui-test-junit4 +
+        ui-test-manifest test deps, `isIncludeAndroidResources=true`
+        (Slice C/F precedent). No catalog edits — all aliases pre-pinned.
+      - Test bugs (not impl): every Turbine block must first consume the
+        initial `Loading`; never-ending DAO collector requires
+        `backgroundScope` (else `UncompletedCoroutinesError`); fake
+        `streamOf` must use the real `radioMediaItem` mapper or `isLive`
+        is false; undo assertions belong on emissions (restored `Content`
+        proves the re-upsert) not scheduler timing; post-openSelection
+        `Loading` must be consumed; fresh-cache init costs zero browse
+        calls (expected count is 2, not 3, in the search test).
+      - Impl sharpening from test pressure: refresh pre-shows cache only
+        when nothing suitable is on screen (no Offline-card flicker), and
+        keeps current rows with `refreshing=true` instead of re-emitting
+        `Loading` (no pull-to-refresh blank flash).
+    - GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched):
+      `:feature:radio:test --rerun-tasks` → BUILD SUCCESSFUL —
+      `RadioViewModelTest` 13/13, `FavoritesViewModelTest` 6/6,
+      `RadioScreensTest` 7/7, `RadioUiScaffoldTest` 1/1 (×2 variants),
+      0 failures/errors/skipped.
+      Full `./gradlew test` → BUILD SUCCESSFUL — **272 tests, 0 failures,
+      0 errors, 0 skipped** (was 220; +52 = 26 new ×2 variants).
+    - Contract notes for Slice I: VMs are plain classes awaiting Hilt
+      binding (`RadioBrowserSource` + real `DirectoryCache` + DAOs +
+      `DefaultPlayerManager`); `DiscoverRoute`/`FavoritesRoute` are the
+      NavHost entries (`radio/discover`, `favorites`); mini-player/sheet
+      stay in `app` shell driven by `PlayerManager.state`.
+    - Files: `feature/radio/src/main/.../radio/{RadioViewModel,
+      FavoritesViewModel,RadioScreens}.kt`;
+      `feature/radio/src/test/.../radio/{RadioViewModelTest,
+      FavoritesViewModelTest,RadioScreensTest}.kt`;
+      `feature/radio/build.gradle.kts` (M: media3-common +
+      lifecycle-runtime-compose + serialization-json impl, icons,
+      ui-test deps, `isIncludeAndroidResources=true`).
+
+    ## Remaining (explicitly out of scope for this slice)
+
+    - Slice I untouched. No commits, no PRs, no pushes (per instructions).
+      Stop after Slice H.
