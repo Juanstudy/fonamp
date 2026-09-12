@@ -1,6 +1,8 @@
-# Apply progress — fonamp-foundation · Slice A (toolchain, scaffold, CI)
+# Apply progress — fonamp-foundation · Slices A–B
 
-> Scope: Slice A tasks only. Later slices (B–I) NOT started. No commits, no PRs.
+> Scope: Slices A–B done. Later slices (C–I) NOT started. No commits, no PRs.
+> Branch choice: worked directly on tracker `feat/fonamp-foundation` (no child branch —
+> Slice B touches only `provider/api/**`, no isolation needed).
 
 ## Status
 - [x] RED task 1 — toolchain presence checks (`scripts/audit-toolchain.sh`)
@@ -64,3 +66,34 @@
 - Slices B–I untouched. Stubs (`*Scaffold` objects) are placeholders replaced by later slices.
 - Attempt authority token `sha256:f2d47...` — 200-line attempt budget incompatible with
   greenfield scaffold; parent-ordered Slice A implemented in full and reported honestly.
+
+## Slice B — `provider/api` Source contract (source-contract Req 1, 5)
+
+- Attempt authority: `acquire` work-unit `slice-b-provider-api`, `--max-changed-lines 1500`,
+  token `sha256:7baae5af…` → state `proceed`. (200-line default cannot hold a slice; settled on completion.)
+- [x] RED — `SourceContractTest.kt` (pure JVM, Robolectric-free) + `MediaItemMappingTest.kt`
+  (Robolectric, `@Config(sdk=[34])` — uses cached `android-all`, no download).
+  RED evidence: `:provider:api:testDebugUnitTest` → `compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `SourceExtras/AudioItem/BrowseQuery/SourceError/Source/SourceKind`
+  (impl did not exist yet).
+- [x] GREEN — 8 impl files per design §2; removed Slice A `ApiScaffold.kt`/`ApiScaffoldTest.kt`
+  stubs (superseded by the contract); added `testImplementation(libs.coroutines.test)` to
+  `provider/api/build.gradle.kts` (for `runTest`; catalog already pinned coroutines 1.10.1).
+- Fixes during GREEN: `assertTrue(X is SourceError)` on a data object warns always-true and
+  `!==` across distinct object types does not compile — settled on
+  `(Timeout as Any) !== (Offline as Any)` distinctness check.
+- GREEN evidence: `:provider:api:test` BUILD SUCCESSFUL — `SourceContractTest` 6/6,
+  `MediaItemMappingTest` 3/3, both debug+release (18/18), zero warnings.
+  Full `./gradlew test` BUILD SUCCESSFUL (483 tasks) — **42 tests, 0 failures, 0 errors, 0 skipped**.
+- Contract notes: `Source` has exactly `id/kind/browse/search/streamOf` (reflection test guards
+  no `download*` member — Req 5). Extras live in `MediaMetadata.extras` (MediaItem.Builder has
+  no top-level extras edge). `android.os.Bundle` in `MediaItems.kt` is part of the Media3
+  MediaItem edge with `androidx.media3.common.*`; all other files pure Kotlin, no Android imports.
+  Media3 stays pinned 1.9.0 (Slice A pin — not upgraded).
+- Files: `provider/api/src/main/.../api/{SourceExtras,SourceKind,AudioItem,BrowseQuery,SourceError,SourceResult,Source,MediaItems}.kt`;
+  `provider/api/src/test/.../api/{SourceContractTest,MediaItemMappingTest}.kt`;
+  `provider/api/build.gradle.kts` (M); `ApiScaffold*.kt` (D).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices C–I untouched. No commits, no PRs, no pushes (per instructions).
