@@ -502,3 +502,71 @@
 
     - Slice I untouched. No commits, no PRs, no pushes (per instructions).
       Stop after Slice H.
+
+## Slice I — `core/permissions`, `feature/settings`, `app` wiring (fixred: red→green)
+
+- Attempt authority: `acquire` work-unit `slice-I-fixred` returned
+  `blocked/active_attempt` (prior attempt token
+  `sha256:b2c460bc…` still open after two timeouts); re-acquired with
+  `--token` → state `proceed`. Settled on completion (see done-state below).
+- [x] RED — tests already on disk from the timed-out attempts
+  (`AudioPermissionGateTest` 9 tests, `SettingsViewModelTest` 5 tests,
+  `ExpandabilityTest` 3 tests). RED evidence reproduced in this run:
+  `:app:kspDebugKotlin` → `Unclosed comment` (nested `/*` in KDoc, Slice G
+  pattern); `SettingsViewModelTest` → 4× `UncompletedCoroutinesError`
+  (60 s hang each) + restart `expected:<DARK> but was:<SYSTEM>`.
+- [x] GREEN — fixes (only `core/permissions/**`, `feature/settings/**`,
+  `app/**` touched):
+  - `AppModules.kt:35` / `AppNav.kt:41`: `` provider/* `` inside KDoc opened a
+    nested Kotlin block comment → reworded to "provider source module" /
+    "future provider-source ids" (grep now finds zero `provider/*` in the
+    three trees). KSP passes.
+  - `SettingsViewModelTest`: every ViewModel now runs on `backgroundScope`
+    (cancelled at teardown, never awaited — the 4 hangs are gone; suite runs
+    in 0.2 s); fake `ThemeDao` is shared across the simulated restart (same
+    instance, Slice H precedent). Two further findings while greening:
+    (1) the `io` dispatcher must share the runTest scheduler
+    (`StandardTestDispatcher(testScheduler)` — a detached
+    `StandardTestDispatcher()` has its own scheduler that
+    `advanceUntilIdle()` never pumps, so the DAO write never landed);
+    (2) the restart write is driven from inside Turbine collection
+    (`await`-until-DARK loop) rather than relying on a bare
+    `advanceUntilIdle()` outside collection.
+  - `app/build.gradle.kts`: added catalog-pinned `libs.serialization.json`
+    impl (`RadioBrowserClient` signatures expose `Json` — Slice H precedent)
+    and `material-icons-core` + `material-icons-extended`
+    (`MusicNote`/`Radio` live in extended — Slice F precedent). No catalog
+    edits; Media3 stays pinned 1.9.0.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, all via `nohup` + poll,
+  never one foreground command >3 min):
+  - `:feature:settings:testDebugUnitTest` → BUILD SUCCESSFUL —
+    `SettingsViewModelTest` 5/5, `SettingsScaffoldTest` 1/1.
+  - `:core:permissions:testDebugUnitTest :app:testDebugUnitTest` →
+    BUILD SUCCESSFUL — `AudioPermissionGateTest` 9/9,
+    `AudioPermissionTest` 2/2, `ExpandabilityTest` 3/3,
+    `ScaffoldTest` 1/1.
+  - Full `./gradlew test` → BUILD SUCCESSFUL (605 tasks) — 62 classes,
+    **306 tests, 0 failures, 0 errors, 0 skipped** (was 272 at Slice H).
+  - Clean `./gradlew assembleDebug` → BUILD SUCCESSFUL.
+- Gates task status (partially blocked, recorded honestly):
+  - `./gradlew test` green ✓; `assembleDebug` builds ✓;
+    `scripts/audit-gates.sh` → workflow/JDK17 ✓, **zero prohibited SDKs** ✓,
+    **permissions allowlist** ✓
+    (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `INTERNET`,
+    `POST_NOTIFICATIONS`, `READ_EXTERNAL_STORAGE`, `READ_MEDIA_AUDIO`),
+    **egress** = radio-browser mirrors (`de1/de2/nl1` + `all.api` bootstrap)
+    + click-count + streams only, zero trackers ✓.
+  - `APK 66,687,418 bytes (~63.6 MB)` → **40 MB gate FAILS**. Pre-existing:
+    Slice G measured 63.3 MB at Slice-F commit; Slice I adds ~0.4 MB
+    (settings UI + app shell + icons-extended). Fixing needs a parent size
+    decision outside Slice I's edit surface (R8/minify is forbidden by
+    scaffold Req 6; alternative is a dependency diet) — NOT attempted here.
+  - On-device manual checks (cold-start→radio-audible ≤3 taps, screen-off +
+    notification sync, 10 s-timeout banner+retry on hardware, theme +
+    favorites round-trips on device) cannot run in this headless environment;
+    theme/favorites persistence is unit-covered (restart tests green).
+- Files: `app/src/main/.../app/{AppModules,AppNav}.kt` (M: KDoc reword);
+  `app/build.gradle.kts` (M: serialization-json + icons deps);
+  `feature/settings/src/test/.../SettingsViewModelTest.kt` (M: backgroundScope
+  + shared-scheduler io + collection-driven restart). No commits, no PRs,
+  no pushes (per instructions). Stop after Slice I.

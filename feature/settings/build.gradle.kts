@@ -42,7 +42,9 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
+    implementation(libs.lifecycle.runtime.compose)
     implementation(libs.coroutines.core)
+    implementation(libs.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

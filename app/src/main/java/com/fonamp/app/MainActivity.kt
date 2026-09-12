@@ -3,12 +3,34 @@ package com.fonamp.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
+import com.fonamp.core.database.ThemeDao
+import com.fonamp.core.player.PlayerManager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
-/** Slice A scaffold: proves Compose + M3 compile in :app. Real NavHost lands in Slice I. */
+/**
+ * Slice I: Hilt entry point hosting the app shell (design §7).
+ *
+ * The [PlayerManager] singleton and [ThemeDao] flow survive configuration
+ * changes (process-scoped bindings); per-tab state lives in the
+ * nav-graph-scoped holders (see `HolderViewModels`).
+ */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var player: PlayerManager
+
+    @Inject
+    lateinit var themeDao: ThemeDao
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Text("Fonamp scaffold") }
+        setContent {
+            FonampRoot(
+                player = player,
+                themeFlow = themeDao.observe(),
+            )
+        }
     }
 }
