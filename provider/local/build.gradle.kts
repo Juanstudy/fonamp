@@ -33,7 +33,9 @@ dependencies {
     implementation(project(":provider:api"))
     implementation(project(":core:player"))
     implementation(libs.coroutines.core)
+    implementation(libs.media3.common)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
+    testImplementation(libs.coroutines.test)
 }

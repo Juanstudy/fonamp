@@ -236,3 +236,79 @@
 
 - Slices F–I untouched. No commits, no PRs, no pushes (per instructions).
   Stop after Slice E.
+
+## Slice F — `provider/local` + `feature/library` collection (source-contract Req 2; library Req 1–6; permissions Req 2–3)
+
+- Attempt authority: `acquire` work-unit `slice-F`, `--max-changed-lines 2500`,
+  token `sha256:860b413e…` → state `proceed`. (Untracked planning files
+  `design.md`/`specs/`/`tasks.md` pre-existed; acquired with
+  `--untracked-scope=exclude`.) Settle on completion.
+- [x] RED — `LocalSourceTest.kt` (9 Robolectric `@Config(sdk=[34])` tests:
+  identity, honest metadata + playable content URIs, absent-fields-omitted,
+  `BrowseQuery` filters ignored + single pass + `IS_MUSIC` selection,
+  empty-store `Ok(empty)`, client-side search title/artist/album, `SecurityException`
+  → typed `Fail`, `streamOf` `local:<id>` + `is_live=false`),
+  `LibraryViewModelTest.kt` (7 Turbine tests: grouped Content, Empty, Denied
+  with zero source calls, Error+retry recovery, artist/album filters + clear,
+  local text filter with exactly 1 browse call, playAt hands visible queue +
+  index to player), `CollectionScreenTest.kt` (6 Compose behavior tests:
+  segment switching, artist pick callback, artist filter rendering, tap→index,
+  Empty message + add-music hint, Denied grant-again).
+  RED evidence: `:provider:local:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `LocalSource/MediaStoreReader` (+ library impl).
+- [x] GREEN — `MediaStoreReader.kt` (reader seam + `ContentResolverReader`),
+  `LocalSource.kt` (id `local`, `LOCAL`, single-pass
+  `query(EXTERNAL_CONTENT_URI, projection, IS_MUSIC != 0)`, honest mapping,
+  client-side `search`, `streamOf` via `provider/api` `localMediaItem`;
+  `ContentResolver` secondary constructor for Slice I wiring),
+  `LibraryPlayer.kt` (minimal `playQueue(items, index)` seam — Slice G
+  `PlayerManager.play` replaces it at app wiring, identical signature),
+  `LibraryViewModel.kt` (plain class + injected scope, not an Android
+  `ViewModel`, so no `lifecycle-viewmodel` dep; Loading/Denied/Empty/
+  Content/Error, grouping + artist/album/query filters, `playAt` via
+  `Source.streamOf`), `CollectionScreen.kt` (TabRow segments with
+  `segment-*` testTags, generic M3 icons only, duration shown only when
+  present, no shuffle/repeat; `CollectionRoute` stateful entry for Slice I).
+  Slice A `LocalScaffold`/`LibraryScaffold` placeholders left in place
+  (tasks do not order removal; harmless, as in Slices C–E).
+- Search-stretch call (LIB-5): **kept** — the title/artist/album text filter
+  is a pure in-memory filter over the loaded catalog (zero extra source
+  reads, asserted by test), so it met the "cheap" bar.
+- Fixes during GREEN:
+  - `MusicNote`/`Album` are in `material-icons-extended`, not `-core`
+    (same split as Slice C) → added extended icons dep.
+  - Compose tests need `testOptions.unitTests.isIncludeAndroidResources=true`
+    (Slice C precedent) for the `ui-test-manifest` ComponentActivity merge.
+  - Fake reader returns a fresh `MatrixCursor` per `query()` (impl closes via
+    `use{}`, like a real `ContentResolver`).
+  - Test bugs (not impl): Turbine sequences must consume initial `Loading`;
+    album-filter test needed an `awaitItem` per emission; segment test drives
+    a `remember`ed holder since the screen is stateless.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched):
+  `:provider:local:test :feature:library:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `LocalSourceTest` 9/9, `LibraryViewModelTest` 7/7, `CollectionScreenTest` 6/6
+  (×2 variants), 0 failures/errors/skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL — 46 classes,
+  **180 tests, 0 failures, 0 errors, 0 skipped** (debug+release).
+- Contract notes for later slices: `Denied` is entered without touching the
+  `Source` (`permissionGranted=false`); Slice I's `AudioPermissionGate`
+  supplies the flag and rebuilds on grant. `LibraryViewModel` is a plain
+  class — Slice I binds it into the Hilt/app graph. `LibraryPlayer` seam has
+  the Slice G `PlayerManager.play` signature for drop-in replacement.
+- Files: `provider/local/src/main/.../local/{MediaStoreReader,LocalSource}.kt`;
+  `provider/local/src/test/.../local/LocalSourceTest.kt`;
+  `feature/library/src/main/.../library/{LibraryPlayer,LibraryViewModel,CollectionScreen}.kt`;
+  `feature/library/src/test/.../library/{LibraryViewModelTest,CollectionScreenTest}.kt`;
+  `provider/local/build.gradle.kts` (M: media3-common impl, coroutines-test);
+  `feature/library/build.gradle.kts` (M: media3-common + lifecycle-runtime-compose
+  impl, material-icons-core+extended, ui-test-junit4 + ui-test-manifest
+  debug/release, `isIncludeAndroidResources=true`). No catalog edits; audit
+  scripts untouched (all direct coordinates BOM-managed, no hardcoded versions).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices G–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice F.
+- Attempt settlement: `settle` outcome `passed` → state `complete`
+  (evidence-revision `sha256:f72b3fce…` = sha256 over the Slice F module
+  test-result XMLs; 8 new files declared via `--untracked-scope=select`).

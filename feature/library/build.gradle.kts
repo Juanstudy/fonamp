@@ -31,6 +31,11 @@ android {
     buildFeatures {
         compose = true
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -40,14 +45,22 @@ dependencies {
     implementation(project(":core:player"))
     implementation(project(":core:ui"))
     implementation(project(":core:permissions"))
+    implementation(libs.media3.common)
+    implementation(libs.lifecycle.runtime.compose)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
+    implementation("androidx.compose.material:material-icons-core")
+    // MusicNote/Album live in the extended set; still generic M3 icons, no custom art.
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.coroutines.core)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.turbine)
     testImplementation(libs.coroutines.test)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    releaseImplementation("androidx.compose.ui:ui-test-manifest")
 }
