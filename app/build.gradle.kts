@@ -67,10 +67,9 @@ dependencies {
     // RadioBrowserClient/DirectoryCache signatures expose kotlinx.serialization
     // types (Slice H precedent: same alias in :feature:radio).
     implementation(libs.serialization.json)
-    // MusicNote/Radio live in the extended set (Slice F precedent); generic M3
-    // icons, no custom art (scaffold Req 5).
+    // Generic M3 icons: core set + project-owned AppIcons copies of the
+    // six extended-only glyphs (no material-icons-extended dependency).
     implementation("androidx.compose.material:material-icons-core")
-    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.hilt.android)

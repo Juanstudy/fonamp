@@ -44,9 +44,9 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     // Generic M3 icons only (no custom iconography in v1, docs/03-design.md §4).
+    // Extended-only glyphs (Pause, MusicNote, …) are project-owned copies
+    // in AppIcons, so material-icons-extended is not needed.
     implementation("androidx.compose.material:material-icons-core")
-    // Pause/Stop live in the extended set; still generic M3 icons, no custom art.
-    implementation("androidx.compose.material:material-icons-extended")
     // PR2 artwork: local thumbs via Coil (stable 2.x); null/error falls back to generic icons.
     implementation(libs.coil.compose)
 

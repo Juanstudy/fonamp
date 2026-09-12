@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -28,6 +27,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fonamp.core.ui.AlbumArtwork
+import com.fonamp.core.ui.AppIcons
 import com.fonamp.core.ui.DeniedState
 import com.fonamp.core.ui.EmptyState
 import com.fonamp.core.ui.ErrorRetryState
@@ -216,7 +216,7 @@ private fun CollectionContent(
                             // cover = first song of the album, null = generic icon.
                             artworkUri = state.songs.firstOrNull { it.album == name }?.artworkUri,
                             size = 48.dp,
-                            fallbackIcon = Icons.Filled.Album,
+                            fallbackIcon = AppIcons.Album,
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = name, style = MaterialTheme.typography.bodyLarge)

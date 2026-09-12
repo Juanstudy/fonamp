@@ -16,11 +16,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +41,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fonamp.core.database.FavoriteStation
+import com.fonamp.core.ui.AppIcons
 import com.fonamp.core.ui.EmptyState
 import com.fonamp.core.ui.ErrorRetryState
 import com.fonamp.core.ui.LoadingState
@@ -150,7 +148,7 @@ fun DiscoverScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(
-                        if (isCountry) Icons.Filled.Public else Icons.Filled.Tag,
+                        if (isCountry) AppIcons.Public else AppIcons.Tag,
                         contentDescription = null,
                     )
                     Column(modifier = Modifier.weight(1f)) {
@@ -227,7 +225,7 @@ fun CuratedSection(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Icon(Icons.Filled.Radio, contentDescription = null)
+                Icon(AppIcons.Radio, contentDescription = null)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = station.title, style = MaterialTheme.typography.bodyLarge)
                     stationMeta(station)?.let {
@@ -306,7 +304,7 @@ fun StationsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(Icons.Filled.Radio, contentDescription = null)
+                        Icon(AppIcons.Radio, contentDescription = null)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = station.title, style = MaterialTheme.typography.bodyLarge)
                             stationMeta(station)?.let {

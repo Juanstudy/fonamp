@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,7 +58,7 @@ fun AlbumArtwork(
     modifier: Modifier = Modifier,
     size: Dp = 44.dp,
     contentDescription: String = "Album artwork",
-    fallbackIcon: ImageVector = Icons.Filled.MusicNote,
+    fallbackIcon: ImageVector = AppIcons.MusicNote,
     fallbackContentDescription: String = "No album artwork",
     imageTestTag: String = "artwork-image",
     fallbackTestTag: String = "artwork-fallback",
@@ -123,7 +121,7 @@ fun MiniPlayer(
                 onClick = onTogglePlayPause,
             ) {
                 Icon(
-                    imageVector = if (state.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    imageVector = if (state.isPlaying) AppIcons.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (state.isPlaying) "Pause" else "Play",
                 )
             }

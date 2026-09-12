@@ -56,9 +56,8 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation("androidx.compose.material:material-icons-core")
-    // Radio/Public/Tag/Favorite live in the extended set; still generic M3
-    // icons, no custom art (Slice F precedent).
-    implementation("androidx.compose.material:material-icons-extended")
+    // Extended-only glyphs (Radio/Public/Tag, …) come from core-ui
+    // AppIcons; no material-icons-extended dependency.
     implementation(libs.coroutines.core)
 
     testImplementation(libs.junit)

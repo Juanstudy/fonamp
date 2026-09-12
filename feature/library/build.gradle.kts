@@ -52,8 +52,8 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation("androidx.compose.material:material-icons-core")
-    // MusicNote/Album live in the extended set; still generic M3 icons, no custom art.
-    implementation("androidx.compose.material:material-icons-extended")
+    // Extended-only glyphs (Album, …) come from core-ui AppIcons;
+    // no material-icons-extended dependency.
     implementation(libs.coroutines.core)
 
     testImplementation(libs.junit)

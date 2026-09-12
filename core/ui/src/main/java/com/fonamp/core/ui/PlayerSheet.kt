@@ -13,8 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -89,7 +87,7 @@ fun PlayerSheet(
             AlbumArtwork(
                 artworkUri = artworkUri,
                 size = 200.dp,
-                fallbackIcon = Icons.Filled.MusicNote,
+                fallbackIcon = AppIcons.MusicNote,
                 imageTestTag = "player-artwork-image",
                 fallbackTestTag = "player-artwork-fallback",
             )
@@ -144,7 +142,7 @@ fun PlayerSheet(
                 onClick = onTogglePlayPause,
             ) {
                 Icon(
-                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    imageVector = if (isPlaying) AppIcons.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (isPlaying) "Pause" else "Play",
                 )
             }
