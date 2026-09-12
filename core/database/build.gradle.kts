@@ -28,6 +28,11 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -39,4 +44,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.turbine)
+    // In-memory Room DAO tests run on the JVM via Robolectric
+    // (Room needs the Android framework; catalog-pinned, no new version).
+    testImplementation(libs.robolectric)
 }

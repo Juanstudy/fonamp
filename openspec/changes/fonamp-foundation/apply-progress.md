@@ -143,3 +143,51 @@
 
 - Slices D–I untouched. No commits, no PRs, no pushes (per instructions).
   Stop after Slice C.
+
+## Slice D — `core/database` Room v1 + favorites store (radio Req 4; settings Req 1)
+
+- Attempt authority: `acquire` work-unit `slice-D`, `--max-changed-lines 1200`,
+  token `sha256:4da91645…` → state `proceed`. Settled on completion (see done-state below).
+- [x] RED — `FavoriteDaoTest.kt` (6 tests: upsert/observe round-trip with full
+  field equality, byId hit+miss, upsert-replaces, delete clears observeAll+byId,
+  undo re-upsert restores full row, nullable-columns round-trip),
+  `ThemeDaoTest.kt` (5 tests: observe-null-before-choice, set→observe,
+  set-replaces single id=1 row, all three modes round-trip, close+reopen
+  restart persistence), `FakeFavoriteDaoTest.kt` (2 tests: fake honors the DAO
+  contract incl. undo). In-memory Room via Robolectric `@Config(sdk=[34])`
+  (cached `android-all`); context from `RuntimeEnvironment.getApplication()`
+  (no new dep — `androidx.test:core` deliberately NOT added).
+  RED evidence: `:core:database:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `FonampDatabase/FavoriteDao/FavoriteStation/…`
+  (impl did not exist yet) + missing Robolectric test dep.
+- [x] GREEN — 6 impl files per design §5: `FavoriteStation.kt` (stationUuid PK,
+  name, streamUrl, country?, tagsCsv?, bitrate?, codec?, favoritedAt),
+  `ThemePref.kt` (`ThemeMode` SYSTEM|LIGHT|DARK enum persisted by name, single
+  row `id=1`), `FavoriteDao.kt` (`observeAll/upsert/delete/byId`),
+  `ThemeDao.kt` (`observe/set`), `FonampDatabase.kt` (v1, `exportSchema=false`),
+  `FakeFavoriteDao.kt` (main-sourceset VM seam: MutableStateFlow-backed, Room
+  semantics — upsert-replaces, delete no-op on unknown, byId null when absent).
+  `core/database/build.gradle.kts`: `testImplementation(libs.robolectric)`
+  (catalog-pinned, no new version) + `isIncludeAndroidResources=true`.
+  Slice A `DatabaseScaffold.kt` placeholder left in place (tasks do not order
+  its removal; harmless, like Slice C's `UiScaffold`).
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched,
+  Room stays 2.6.1):
+  `:core:database:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `FavoriteDaoTest` 6/6, `ThemeDaoTest` 5/5, `FakeFavoriteDaoTest` 2/2,
+  `DatabaseScaffoldTest` 1/1, debug+release, 0 failures/errors/skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL (533 tasks) — 34 classes,
+  **102 tests, 0 failures, 0 errors, 0 skipped** (was 76; +26 new).
+- Restart note: in-memory DBs are destroyed on close by definition, so the
+  restart test uses a temp-file DB (close → reopen → DARK survives); all other
+  tests use in-memory Room per the task. Directory cache stays out of Room
+  (design §5: cache clear ≠ DB wipe).
+- Files: `core/database/src/main/.../database/{FavoriteStation,ThemePref,
+  FavoriteDao,ThemeDao,FonampDatabase,FakeFavoriteDao}.kt`;
+  `core/database/src/test/.../database/{FavoriteDaoTest,ThemeDaoTest,
+  FakeFavoriteDaoTest}.kt`; `core/database/build.gradle.kts` (M).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices E–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice D.
