@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.media3.common)
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
+    implementation(libs.hilt.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

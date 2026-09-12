@@ -312,3 +312,97 @@
 - Attempt settlement: `settle` outcome `passed` → state `complete`
   (evidence-revision `sha256:f72b3fce…` = sha256 over the Slice F module
   test-result XMLs; 8 new files declared via `--untracked-scope=select`).
+
+## Slice G — `core/player` PlaybackService + PlayerManager (player Req 1–6)
+
+- Attempt authority: `acquire` work-unit `slice-G`, `--max-changed-lines 2500`,
+  token `sha256:e98a427e…` → state `proceed`. (Untracked planning files
+  `design.md`/`specs/`/`tasks.md` pre-existed; acquired with
+  `--untracked-scope=exclude`.) Settle on completion.
+- [x] RED — `PlayerManagerTest.kt` (16 Robolectric `@Config(sdk=[34])` Turbine
+  tests: play queue/index/liveness, playSingle radio-live, toggle pause/resume
+  local, toggle-live-stops, stop-keeps-queue, next/prev clamp + empty no-op,
+  seek local vs live-noop, TIMEOUT/OFFLINE/STREAM_UNAVAILABLE banner ×3,
+  interactive-under-banner, retry-clears, retry-persistent, restore-paused
+  never-phantom, restore-empty→idle, InMemoryQueueStore round-trip, service
+  10 s constants), `MediaItemMapperTest.kt` (4 tests: extras literals match
+  provider contract, local `local:<id>`+`is_live=false`, radio
+  `radio:<uuid>`+`is_live=true`, bare item defaults non-live).
+  RED evidence: `:core:player:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `PlayerManager/PlayerUiState/PlayerError/
+  FakePlayerManager/PlayerExtras/QueueStore/PlaybackService` (impl absent).
+- [x] GREEN — 8 impl files per design §3 + player Req 1–6: `PlayerError.kt`
+  (TIMEOUT|OFFLINE|STREAM_UNAVAILABLE), `PlayerUiState.kt` (queue/index/
+  isPlaying/isLive/icyTitle/error + `positionMs` last-seek anchor for the
+  local seek bar, always 0 when live), `PlayerExtras.kt` (source-blind key
+  mirror — zero `provider/*` imports, verified by grep — plus
+  `isLive/sourceId/stableId/stationUuid/country` readers over
+  `mediaMetadata.extras`), `PlayerManager.kt` (interface: state/play/
+  playSingle/toggle/stop/next/prev/seekTo/retry; radio toggle-stops,
+  live seek no-op; no shuffle/repeat), `FakePlayerManager.kt` (main-sourceset
+  VM seam, Slice D `FakeFavoriteDao` precedent; + `failNextWith` /
+  `restore` test-only seams), `QueueStore.kt` (`SavedQueue` mediaIds+index+
+  position, `InMemoryQueueStore`, runCatching `PrefsQueueStore`),
+  `PlaybackService.kt` (`MediaSessionService`, single ExoPlayer,
+  `AudioAttributes(USAGE_MEDIA, MUSIC)` + `handleAudioFocus=true` via
+  `setAudioAttributes(…, true)`, `DefaultHttpDataSource` 10 s connect/read,
+  `Icy-MetaData: 1` request, `setHandleAudioBecomingNoisy(true)`,
+  best-effort prefs save on transitions + load on create, always starts
+  idle — never phantom-playing; FGS/notification/headset via Media3 session
+  automatics), `DefaultPlayerManager.kt` (`@Singleton @Inject`,
+  `MediaController` holder with optimistic pre-connect state + replay on
+  connect, listener→state mapping incl. ICY title when live and cause-chain
+  error mapping `SocketTimeout→TIMEOUT`, `UnknownHost/Connect→OFFLINE`,
+  else `STREAM_UNAVAILABLE`). Manifest declares the service
+  (`mediaPlayback` FGS type; permission in Slice I). Slice A
+  `PlayerScaffold` stub left in place (tasks do not order removal).
+- Fixes during GREEN:
+  - Kotlin block comments nest: ``provider/*`` inside KDoc opens a nested
+    comment → reworded (2 files).
+  - Media3 1.9.0 has no `AudioAttributes.Builder.setHandleAudioFocus`
+    (focus flag is the `setAudioAttributes(attrs, true)` arg) and no
+    `ERROR_CODE_IO_NETWORK_{READ_TIMEOUT,UNAVAILABLE}` → mapped the two
+    existing network codes + cause-chain heuristics.
+  - Library manifest needs `xmlns:android` (merger parse failure).
+  - `core/player/build.gradle.kts` gains catalog-pinned `hilt.android`
+    impl (annotations only; no ksp — app owns the graph). Media3 stays 1.9.0.
+  - Test bugs (not impl): StateFlow conflates equal values — persistent-retry
+    banner asserted via sticky `state.value`, empty-restore test now drives
+    play→restore so the idle transition emits.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0):
+  `:core:player:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `PlayerManagerTest` 16/16, `MediaItemMapperTest` 4/4,
+  `PlayerScaffoldTest` 1/1 (×2 variants), 0 failures/errors/skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL — **220 tests, 0 failures,
+  0 errors, 0 skipped** (was 180; +40 net).
+  `assembleDebug` (clean, after deleting stale incremental APK — see size
+  note) → BUILD SUCCESSFUL.
+- APK size: Slice-G clean APK **66,343,354 bytes (~63.3 MB) — 40 MB gate
+  FAILS, but the breach predates this slice**: clean worktree build at
+  Slice-F commit `bde2f74` is already 66,310,446 bytes (~63.2 MB); Slice G
+  adds ~33 KB (8 classes + manifest entry). Slices B–F never ran
+  `assembleDebug`, so the 32.6→63.2 MB growth (Room, Retrofit/OkHttp,
+  icons-extended, lifecycle, media3-ui) went ungated. Uncompressed dex is
+  ~66 MB (classes.dex 44 MB Stored). Fixing the gate needs a size decision
+  outside Slice G's edit surface (R8/minify currently forbidden by design,
+  or a dependency diet) — flagged for parent, not attempted here.
+  (Also noted: incremental `assembleDebug` can append ~11 MB of orphaned
+  zip entries — always compare clean builds.)
+- Contract notes for later slices: `feature/*` VMs inject
+  `FakePlayerManager` (main sourceset, Robolectric-free); Slice I binds
+  `DefaultPlayerManager` as the `PlayerManager` Hilt binding and declares
+  `FOREGROUND_SERVICE` + `MEDIA_PLAYBACK` + notification permissions.
+  Full item restore after death needs source cooperation (only sources can
+  rebuild MediaItems from ids) — service persists context, coherence
+  (never phantom-playing) is tested.
+- Files: `core/player/src/main/.../player/{PlayerError,PlayerUiState,
+  PlayerExtras,PlayerManager,FakePlayerManager,QueueStore,PlaybackService,
+  DefaultPlayerManager}.kt`;
+  `core/player/src/test/.../player/{PlayerManagerTest,MediaItemMapperTest}.kt`;
+  `core/player/build.gradle.kts` (M: hilt-android impl);
+  `core/player/src/main/AndroidManifest.xml` (M: service declaration).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices H–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice G.
