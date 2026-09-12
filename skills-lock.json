@@ -1,12 +1,6 @@
 {
   "version": 1,
   "skills": {
-    "android-clean-architecture": {
-      "source": "affaan-m/ecc",
-      "sourceType": "github",
-      "skillPath": "skills/android-clean-architecture/SKILL.md",
-      "computedHash": "80779b595f194a1ca3d59e36cbf4b29f426faaf90cf9c41dfd61a80442214890"
-    },
     "android-jetpack-compose": {
       "source": "thebushidocollective/han",
       "sourceType": "github",
@@ -19,11 +13,11 @@
       "skillPath": "skills/android-kotlin/SKILL.md",
       "computedHash": "0bb451490ccb9e02daed97d9cd2e84071a874ba46ed5ecf5a491c2fa27f0828f"
     },
-    "mobile-android-design": {
-      "source": "wshobson/agents",
+    "testing-setup": {
+      "source": "android/skills",
       "sourceType": "github",
-      "skillPath": "plugins/ui-design/skills/mobile-android-design/SKILL.md",
-      "computedHash": "bcb274bcc4e0ad076b5947f90e5a247f370ed4da1274b2b7347dc293ee396309"
+      "skillPath": "testing/testing-setup/SKILL.md",
+      "computedHash": "76bfe8e0180767c7c1631066fd1c000ef21bd9145945d1e3192bb165b3d80d4d"
     }
   }
 }

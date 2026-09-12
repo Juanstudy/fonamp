@@ -1,6 +1,7 @@
 # Local Pi runtime state
 .atl/
 .pi/
+.claude/
 
 # Android build outputs
 build/
