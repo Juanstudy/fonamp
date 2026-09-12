@@ -59,7 +59,7 @@ Room favorites, Compose UI. This PRD carries those learnings forward — pattern
 
 ## 3. Non-functional requirements
 - **Performance**: cold start to interactive <2s on mid-range; directory lists cached, paged.
-- **Size**: APK debug <40 MB (v1); release with R8/minify; no dependency without justification (allowlist, see `04-technology.md`).
+- **Size**: release APK <40 MB (validated post-v1 when the release pipeline exists); debug APK monitored with no hard gate in v1 (currently ~63 MB); R8/minify posture post-v1; no dependency without justification (allowlist, see `04-technology.md`).
 - **Battery**: no polling; downloads/uploads only on demand; foreground service only while playing.
 - **Reliability**: player survives network loss (error state, not crash); process-death restore of queue where feasible.
 - **Security/privacy**: INTERNET + audio + foreground-playback (+notifications) only; cleartext only where streams require it; zero third-party trackers; no data leaves the device except user-configured servers and directory APIs.

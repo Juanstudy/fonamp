@@ -34,7 +34,7 @@ keep it playing with the screen off.
 - [ ] Dead stream → visible error + retry; UI never freezes; offline directory → explicit retry state.
 - [ ] Permission denied → explanatory empty state, no broken screen.
 - [ ] A mock `Source` (e.g. bundled demo feed) builds against `provider/api` in <1 day, no player/UI-shell changes.
-- [ ] `./gradlew test` green; APK debug <40 MB; permissions limited to audio + internet + foreground playback (+notifications).
+- [ ] `./gradlew test` green; release APK <40 MB (validated post-v1 when the release pipeline exists); debug APK monitored with no hard gate in v1; permissions limited to audio + internet + foreground playback (+notifications).
 
 ## 6. Risks
 - "All-in-one" scope creep → defense: per-slice non-goals (this file).
