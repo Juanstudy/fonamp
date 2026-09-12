@@ -14,8 +14,8 @@ android {
         applicationId = "com.fonamp.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0-slice-a"
+        versionCode = 2
+        versionName = "0.0.2"
     }
 
     buildTypes {

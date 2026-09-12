@@ -4,7 +4,7 @@
 App Android nativa (Kotlin + Jetpack Compose + Hilt + Media3).
 - `applicationId`: `com.fonamp.app` — `minSdk 29`, `targetSdk 35`, JDK 17 (Corretto)
 - Módulos: `:app`, `:core:*` (player, network, database, permissions, ui), `:provider:*` (api, radio, local), `:feature:*` (library, radio, settings)
-- Versión actual: `0.1.0-slice-a` (`versionCode 1`) en `app/build.gradle.kts`
+- Versión actual: `0.0.2` (`versionCode 2`) en `app/build.gradle.kts`
 
 ## Workflows CI/CD
 
