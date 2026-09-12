@@ -1,0 +1,572 @@
+# Apply progress — fonamp-foundation · Slices A–B
+
+> Scope: Slices A–B done. Later slices (C–I) NOT started. No commits, no PRs.
+> Branch choice: worked directly on tracker `feat/fonamp-foundation` (no child branch —
+> Slice B touches only `provider/api/**`, no isolation needed).
+
+## Status
+- [x] RED task 1 — toolchain presence checks (`scripts/audit-toolchain.sh`)
+- [x] GREEN task 2 — Gradle scaffold (12 modules, pins, per-module builds)
+- [x] RED task 3 — CI gate tests (`scripts/audit-gates.sh`)
+- [x] GREEN task 4 — CI workflow (`.github/workflows/android.yml`)
+
+## RED → GREEN evidence
+- RED run (before scaffold): `audit-toolchain.sh` → RED (settings absent, toml absent,
+  app build absent); `audit-gates.sh` → RED (workflow absent, APK absent, no manifests).
+- GREEN run (after scaffold + build): both scripts exit 0 — see "Gate results" below.
+
+## Commands run (all with JDK 17 Corretto + ANDROID_HOME set)
+- `java -version` → `17.0.20.1 Corretto`; `$ANDROID_HOME/platforms` → `android-34 android-35`
+- `gradle wrapper --gradle-version 8.10.2` (via `~/toolcache/gradle-8.10.2`) → `gradlew` on branch `feat/fonamp-foundation`
+- `./gradlew test` → BUILD SUCCESSFUL (483 tasks) — **26 tests, 0 failures, 0 errors, 0 skipped**
+- `./gradlew assembleDebug` → BUILD SUCCESSFUL — `app-debug.apk` 34,148,211 bytes (~32.6 MB) < 40 MB
+
+## Gate results (final)
+- Toolchain audit: 12/12 modules in `settings.gradle.kts`; all 18 version pins present;
+  media3 single pin; no `isMinifyEnabled=true`; minSdk 29 / targetSdk 35 / compileSdk 35 → GREEN
+- Gates audit: workflow runs `./gradlew test` + `assembleDebug` on JDK 17; zero
+  `ads|admob|firebase|analytics|crashlytics`; APK 33M < 40MB; 6/6 manifest permissions
+  within allowlist → GREEN
+
+## Version pins (gradle/libs.versions.toml — each verified reachable before pinning)
+- Gradle 8.10.2 · AGP 8.7.3 · Kotlin 2.0.21 · KSP 2.0.21-1.0.28 · Hilt 2.55 · Room 2.6.1
+- Compose BOM 2024.12.01 · activity-compose 1.9.3 · lifecycle 2.8.7 · navigation-compose 2.8.4 ·
+  hilt-navigation-compose 1.2.0
+- **Media3 1.9.0 identically across exoplayer/session/ui/datasource/common**
+- Retrofit 2.11.0 · OkHttp 4.12.0 · serialization 1.8.1 · Coroutines 1.10.1
+- JUnit 4.13.2 · Robolectric 4.14.1 · Turbine 1.1.0 · MockWebServer 4.12.0
+
+## Deviation from design (Media3 version)
+- Design §0 default was Media3 `1.10.1` ("latest stable, else 1.10.1"). At apply time the
+  actual latest stable is `1.11.1`, but **both 1.11.1 and 1.10.1 declare
+  `minCompileSdk=36`** (verified from AAR metadata on Google Maven), which conflicts
+  with the binding `compileSdk 35` (AGP 8.7 max recommended 35; SDK has no API-36
+  platform). Pinned newest 35-compatible stable instead: **Media3 1.9.0**
+  (`minCompileSdk=35`). Revisit iff compileSdk moves to 36+.
+
+## Fixes applied during GREEN
+- `build.gradle.kts`: `#` → `//` comments (Kotlin DSL syntax).
+- Compose BOM consumed via `platform(libs.compose.bom)` in `:app`, `:core:ui`,
+  `:feature:library`, `:feature:radio`, `:feature:settings` (bare `implementation`
+  left artifact versions empty).
+- `core/network` takes **no** `provider/api` dependency (design §1: core → third-party only).
+- Shell: `export JAVA_HOME/PATH` must be separate commands (same-line `PATH=$JAVA_HOME/...`
+  expands the stale value → Gradle ran on Java 26 and fails).
+
+## Files created (Slice A)
+- `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, `gradle/libs.versions.toml`,
+  `gradlew` + `gradle/wrapper/*`
+- 12 module `build.gradle.kts` + manifests; stub sources + JUnit smoke tests per module
+  (`app`: Hilt `FonampApp`/`ScaffoldModule`, Compose `MainActivity`)
+- `scripts/audit-toolchain.sh`, `scripts/audit-gates.sh`
+- `.github/workflows/android.yml` (JDK 17 Corretto → toolchain audit → `test` →
+  `assembleDebug` → gates audit)
+
+## Remaining (explicitly out of scope for this slice)
+- Slices B–I untouched. Stubs (`*Scaffold` objects) are placeholders replaced by later slices.
+- Attempt authority token `sha256:f2d47...` — 200-line attempt budget incompatible with
+  greenfield scaffold; parent-ordered Slice A implemented in full and reported honestly.
+
+## Slice B — `provider/api` Source contract (source-contract Req 1, 5)
+
+- Attempt authority: `acquire` work-unit `slice-b-provider-api`, `--max-changed-lines 1500`,
+  token `sha256:7baae5af…` → state `proceed`. (200-line default cannot hold a slice; settled on completion.)
+- [x] RED — `SourceContractTest.kt` (pure JVM, Robolectric-free) + `MediaItemMappingTest.kt`
+  (Robolectric, `@Config(sdk=[34])` — uses cached `android-all`, no download).
+  RED evidence: `:provider:api:testDebugUnitTest` → `compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `SourceExtras/AudioItem/BrowseQuery/SourceError/Source/SourceKind`
+  (impl did not exist yet).
+- [x] GREEN — 8 impl files per design §2; removed Slice A `ApiScaffold.kt`/`ApiScaffoldTest.kt`
+  stubs (superseded by the contract); added `testImplementation(libs.coroutines.test)` to
+  `provider/api/build.gradle.kts` (for `runTest`; catalog already pinned coroutines 1.10.1).
+- Fixes during GREEN: `assertTrue(X is SourceError)` on a data object warns always-true and
+  `!==` across distinct object types does not compile — settled on
+  `(Timeout as Any) !== (Offline as Any)` distinctness check.
+- GREEN evidence: `:provider:api:test` BUILD SUCCESSFUL — `SourceContractTest` 6/6,
+  `MediaItemMappingTest` 3/3, both debug+release (18/18), zero warnings.
+  Full `./gradlew test` BUILD SUCCESSFUL (483 tasks) — **42 tests, 0 failures, 0 errors, 0 skipped**.
+- Contract notes: `Source` has exactly `id/kind/browse/search/streamOf` (reflection test guards
+  no `download*` member — Req 5). Extras live in `MediaMetadata.extras` (MediaItem.Builder has
+  no top-level extras edge). `android.os.Bundle` in `MediaItems.kt` is part of the Media3
+  MediaItem edge with `androidx.media3.common.*`; all other files pure Kotlin, no Android imports.
+  Media3 stays pinned 1.9.0 (Slice A pin — not upgraded).
+- Files: `provider/api/src/main/.../api/{SourceExtras,SourceKind,AudioItem,BrowseQuery,SourceError,SourceResult,Source,MediaItems}.kt`;
+  `provider/api/src/test/.../api/{SourceContractTest,MediaItemMappingTest}.kt`;
+  `provider/api/build.gradle.kts` (M); `ApiScaffold*.kt` (D).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices C–I untouched. No commits, no PRs, no pushes (per instructions).
+
+## Slice C — `core/ui` design system + shared states (scaffold Req 4, 5, 7)
+
+- Attempt authority: prior `slice-C` attempt (ordinal 3) was still `running` with
+  partial work on disk and no result. `acquire slice-C-retry` returned
+  `blocked/active_attempt` with continuation token
+  `sha256:cda01acc…`; re-acquired with `--token` → state `proceed`.
+  Token `sha256:cda01acc564fcb91ea273cddf0e6082d765b24f3349da6457752314d464faf83`.
+  Settled on completion (see done-state below).
+- [x] RED — `core/ui/src/test/.../UiStatesTest.kt` (17 behavior tests, Robolectric
+  `@Config(sdk=[34])`, `createComposeRule`): Loading shimmer rows never-blank +
+  dark, Empty message+hint + dark, Offline card + retry-callback + dark, Denied
+  why + grant-again + settings deep-link, ErrorRetry message + retry, MiniPlayer
+  48dp play/pause + close targets with content descriptions + paused Play state,
+  PlayerSheet skeleton (title/badge/close) + error-banner retry, SourceBadge
+  radio|local, light/dark render of all states, MiniPlayer state restoration.
+  (RED pre-existed as partial work with impl present, so per instructions the
+  gate is GREEN-till-proven: forced rerun green, no impl fix needed.)
+- [x] GREEN — 5 impl files per design §7 + docs/03-design.md §4 (M3 DEFAULTS only,
+  no custom tokens): `FonampTheme.kt` (`lightColorScheme()`/`darkColorScheme()`
+  defaults), `UiStates.kt` (`LoadingState` static skeleton rows — animated shimmer
+  deferred to v2 visual pass, documented in KDoc; `EmptyState` message+hint,
+  `OfflineState` card + Retry + cacheNote slot, `DeniedState` why + Grant again +
+  Open-settings slot, `ErrorRetryState`), `MiniPlayer.kt` (`MiniPlayerState` +
+  48dp `sizeIn` targets, Pause/Play/Close-player descriptions, tap-to-expand),
+  `PlayerSheet.kt` (title/subtitle/badge/ICY line/favorite toggle/error+retry;
+  NO shuffle/repeat/speed/sleep), `SourceBadge.kt` (own `SourceBadgeKind`
+  RADIO|LOCAL enum — keeps core→third-party-only rule, no `provider/api` dep).
+  `core/ui/build.gradle.kts`: `ui-test-junit4` + `ui-test-manifest`
+  (debug+release) test deps. Slice A `UiScaffold.kt` placeholder left in place
+  (harmless, superseded docs updated by later slices if desired).
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched):
+  `./gradlew :core:ui:test --rerun-tasks` → BUILD SUCCESSFUL in 36s —
+  `UiStatesTest` 17/17 debug + 17/17 release, `UiScaffoldTest` 1/1 ×2,
+  0 failures, 0 errors, 0 skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL (507 tasks) — 28 classes,
+  **76 tests, 0 failures, 0 errors, 0 skipped**
+  (core/ui 36, provider/api 18, 10 modules ×2 smoke).
+- Files: `core/ui/src/main/.../ui/{FonampTheme,UiStates,MiniPlayer,PlayerSheet,
+  SourceBadge}.kt`; `core/ui/src/test/.../ui/UiStatesTest.kt`;
+  `core/ui/build.gradle.kts` (M).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices D–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice C.
+
+## Slice D — `core/database` Room v1 + favorites store (radio Req 4; settings Req 1)
+
+- Attempt authority: `acquire` work-unit `slice-D`, `--max-changed-lines 1200`,
+  token `sha256:4da91645…` → state `proceed`. Settled on completion (see done-state below).
+- [x] RED — `FavoriteDaoTest.kt` (6 tests: upsert/observe round-trip with full
+  field equality, byId hit+miss, upsert-replaces, delete clears observeAll+byId,
+  undo re-upsert restores full row, nullable-columns round-trip),
+  `ThemeDaoTest.kt` (5 tests: observe-null-before-choice, set→observe,
+  set-replaces single id=1 row, all three modes round-trip, close+reopen
+  restart persistence), `FakeFavoriteDaoTest.kt` (2 tests: fake honors the DAO
+  contract incl. undo). In-memory Room via Robolectric `@Config(sdk=[34])`
+  (cached `android-all`); context from `RuntimeEnvironment.getApplication()`
+  (no new dep — `androidx.test:core` deliberately NOT added).
+  RED evidence: `:core:database:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `FonampDatabase/FavoriteDao/FavoriteStation/…`
+  (impl did not exist yet) + missing Robolectric test dep.
+- [x] GREEN — 6 impl files per design §5: `FavoriteStation.kt` (stationUuid PK,
+  name, streamUrl, country?, tagsCsv?, bitrate?, codec?, favoritedAt),
+  `ThemePref.kt` (`ThemeMode` SYSTEM|LIGHT|DARK enum persisted by name, single
+  row `id=1`), `FavoriteDao.kt` (`observeAll/upsert/delete/byId`),
+  `ThemeDao.kt` (`observe/set`), `FonampDatabase.kt` (v1, `exportSchema=false`),
+  `FakeFavoriteDao.kt` (main-sourceset VM seam: MutableStateFlow-backed, Room
+  semantics — upsert-replaces, delete no-op on unknown, byId null when absent).
+  `core/database/build.gradle.kts`: `testImplementation(libs.robolectric)`
+  (catalog-pinned, no new version) + `isIncludeAndroidResources=true`.
+  Slice A `DatabaseScaffold.kt` placeholder left in place (tasks do not order
+  its removal; harmless, like Slice C's `UiScaffold`).
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched,
+  Room stays 2.6.1):
+  `:core:database:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `FavoriteDaoTest` 6/6, `ThemeDaoTest` 5/5, `FakeFavoriteDaoTest` 2/2,
+  `DatabaseScaffoldTest` 1/1, debug+release, 0 failures/errors/skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL (533 tasks) — 34 classes,
+  **102 tests, 0 failures, 0 errors, 0 skipped** (was 76; +26 new).
+- Restart note: in-memory DBs are destroyed on close by definition, so the
+  restart test uses a temp-file DB (close → reopen → DARK survives); all other
+  tests use in-memory Room per the task. Directory cache stays out of Room
+  (design §5: cache clear ≠ DB wipe).
+- Files: `core/database/src/main/.../database/{FavoriteStation,ThemePref,
+  FavoriteDao,ThemeDao,FonampDatabase,FakeFavoriteDao}.kt`;
+  `core/database/src/test/.../database/{FavoriteDaoTest,ThemeDaoTest,
+  FakeFavoriteDaoTest}.kt`; `core/database/build.gradle.kts` (M).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices E–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice D.
+
+## Slice E — `core/network` + `provider/radio` (source-contract Req 3, 4; radio Req 1, 2, 5, 6)
+
+- Attempt authority: `acquire` work-unit `slice-E`, `--max-changed-lines 2500`,
+  token `sha256:f007d9c7…` → state `proceed`. Settled on completion (see done-state below).
+- [x] RED — `MirrorPolicyTest.kt` (6 tests), `DirectoryCacheTest.kt` (4 tests),
+  `RadioBrowserSourceTest.kt` (6 tests), all MockWebServer-backed, zero real network.
+  RED evidence: `:core:network / :provider:radio:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `RadioBrowserClient/DirectoryCache/MirrorPolicy/
+  RadioBrowserSource/StationQuery` (impl did not exist yet).
+- [x] GREEN — 6 impl files in `core/network` per design §4 + 1 in `provider/radio`
+  per design §2. Slice A `NetworkScaffold`/`RadioScaffold` placeholders left in
+  place (tasks do not order their removal; harmless, as in Slices C–D).
+- Fixes during GREEN:
+  - `NetworkError.Unknown(cause)` hid `Throwable.cause` → renamed field to `error`.
+  - Converter import is Square's `retrofit2.converter.kotlinx.serialization` (catalog
+    artifact `com.squareup.retrofit2:converter-kotlinx-serialization`), not JakeWharton's.
+  - `provider/radio` needed its own `implementation(libs.media3.common)` (MediaItem in
+    the implemented interface) + `testImplementation` `robolectric`/`serialization-json`
+    (`streamOf` touches `android.os.Bundle`; `@Config(sdk=[34])` uses cached android-all).
+  - Test bug (not impl): url-less row is correctly dropped as unplayable — test now
+    asserts the drop plus nullable tolerance on the surviving row.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched,
+  Retrofit 2.11.0 / OkHttp 4.12.0 / serialization 1.8.1 per pins):
+  `:core:network:test :provider:radio:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `MirrorPolicyTest` 6/6, `DirectoryCacheTest` 4/4, `RadioBrowserSourceTest` 6/6,
+  0 failures/errors/skipped (debug; release rerun in full suite).
+  Full `./gradlew test` → BUILD SUCCESSFUL — no regressions.
+- Contract notes for later slices: index rows are navigation nodes (`stableId`
+  `country:<name>`/`tag:<name>`, empty `streamUri` — never play them, browse deeper);
+  genre resolves via the `stations/bytag` endpoint (directory has no genre listing);
+  `search` is cache-only (empty cache → `Ok(empty)`); click-count fires from
+  `streamOf` (swallowed); `DirectoryCache.clear()` never touches Room.
+- Files: `core/network/src/main/.../network/{NetworkError,RadioDtos,RadioBrowserApi,
+  MirrorPolicy,RadioBrowserClient,DirectoryCache}.kt`;
+  `core/network/src/test/.../network/{MirrorPolicyTest,DirectoryCacheTest}.kt`;
+  `provider/radio/src/main/.../radio/RadioBrowserSource.kt`;
+  `provider/radio/src/test/.../radio/RadioBrowserSourceTest.kt`;
+  `provider/radio/build.gradle.kts` (M: media3-common impl, robolectric +
+  serialization-json test deps).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices F–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice E.
+
+## Slice F — `provider/local` + `feature/library` collection (source-contract Req 2; library Req 1–6; permissions Req 2–3)
+
+- Attempt authority: `acquire` work-unit `slice-F`, `--max-changed-lines 2500`,
+  token `sha256:860b413e…` → state `proceed`. (Untracked planning files
+  `design.md`/`specs/`/`tasks.md` pre-existed; acquired with
+  `--untracked-scope=exclude`.) Settle on completion.
+- [x] RED — `LocalSourceTest.kt` (9 Robolectric `@Config(sdk=[34])` tests:
+  identity, honest metadata + playable content URIs, absent-fields-omitted,
+  `BrowseQuery` filters ignored + single pass + `IS_MUSIC` selection,
+  empty-store `Ok(empty)`, client-side search title/artist/album, `SecurityException`
+  → typed `Fail`, `streamOf` `local:<id>` + `is_live=false`),
+  `LibraryViewModelTest.kt` (7 Turbine tests: grouped Content, Empty, Denied
+  with zero source calls, Error+retry recovery, artist/album filters + clear,
+  local text filter with exactly 1 browse call, playAt hands visible queue +
+  index to player), `CollectionScreenTest.kt` (6 Compose behavior tests:
+  segment switching, artist pick callback, artist filter rendering, tap→index,
+  Empty message + add-music hint, Denied grant-again).
+  RED evidence: `:provider:local:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `LocalSource/MediaStoreReader` (+ library impl).
+- [x] GREEN — `MediaStoreReader.kt` (reader seam + `ContentResolverReader`),
+  `LocalSource.kt` (id `local`, `LOCAL`, single-pass
+  `query(EXTERNAL_CONTENT_URI, projection, IS_MUSIC != 0)`, honest mapping,
+  client-side `search`, `streamOf` via `provider/api` `localMediaItem`;
+  `ContentResolver` secondary constructor for Slice I wiring),
+  `LibraryPlayer.kt` (minimal `playQueue(items, index)` seam — Slice G
+  `PlayerManager.play` replaces it at app wiring, identical signature),
+  `LibraryViewModel.kt` (plain class + injected scope, not an Android
+  `ViewModel`, so no `lifecycle-viewmodel` dep; Loading/Denied/Empty/
+  Content/Error, grouping + artist/album/query filters, `playAt` via
+  `Source.streamOf`), `CollectionScreen.kt` (TabRow segments with
+  `segment-*` testTags, generic M3 icons only, duration shown only when
+  present, no shuffle/repeat; `CollectionRoute` stateful entry for Slice I).
+  Slice A `LocalScaffold`/`LibraryScaffold` placeholders left in place
+  (tasks do not order removal; harmless, as in Slices C–E).
+- Search-stretch call (LIB-5): **kept** — the title/artist/album text filter
+  is a pure in-memory filter over the loaded catalog (zero extra source
+  reads, asserted by test), so it met the "cheap" bar.
+- Fixes during GREEN:
+  - `MusicNote`/`Album` are in `material-icons-extended`, not `-core`
+    (same split as Slice C) → added extended icons dep.
+  - Compose tests need `testOptions.unitTests.isIncludeAndroidResources=true`
+    (Slice C precedent) for the `ui-test-manifest` ComponentActivity merge.
+  - Fake reader returns a fresh `MatrixCursor` per `query()` (impl closes via
+    `use{}`, like a real `ContentResolver`).
+  - Test bugs (not impl): Turbine sequences must consume initial `Loading`;
+    album-filter test needed an `awaitItem` per emission; segment test drives
+    a `remember`ed holder since the screen is stateless.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched):
+  `:provider:local:test :feature:library:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `LocalSourceTest` 9/9, `LibraryViewModelTest` 7/7, `CollectionScreenTest` 6/6
+  (×2 variants), 0 failures/errors/skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL — 46 classes,
+  **180 tests, 0 failures, 0 errors, 0 skipped** (debug+release).
+- Contract notes for later slices: `Denied` is entered without touching the
+  `Source` (`permissionGranted=false`); Slice I's `AudioPermissionGate`
+  supplies the flag and rebuilds on grant. `LibraryViewModel` is a plain
+  class — Slice I binds it into the Hilt/app graph. `LibraryPlayer` seam has
+  the Slice G `PlayerManager.play` signature for drop-in replacement.
+- Files: `provider/local/src/main/.../local/{MediaStoreReader,LocalSource}.kt`;
+  `provider/local/src/test/.../local/LocalSourceTest.kt`;
+  `feature/library/src/main/.../library/{LibraryPlayer,LibraryViewModel,CollectionScreen}.kt`;
+  `feature/library/src/test/.../library/{LibraryViewModelTest,CollectionScreenTest}.kt`;
+  `provider/local/build.gradle.kts` (M: media3-common impl, coroutines-test);
+  `feature/library/build.gradle.kts` (M: media3-common + lifecycle-runtime-compose
+  impl, material-icons-core+extended, ui-test-junit4 + ui-test-manifest
+  debug/release, `isIncludeAndroidResources=true`). No catalog edits; audit
+  scripts untouched (all direct coordinates BOM-managed, no hardcoded versions).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices G–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice F.
+- Attempt settlement: `settle` outcome `passed` → state `complete`
+  (evidence-revision `sha256:f72b3fce…` = sha256 over the Slice F module
+  test-result XMLs; 8 new files declared via `--untracked-scope=select`).
+
+## Slice G — `core/player` PlaybackService + PlayerManager (player Req 1–6)
+
+- Attempt authority: `acquire` work-unit `slice-G`, `--max-changed-lines 2500`,
+  token `sha256:e98a427e…` → state `proceed`. (Untracked planning files
+  `design.md`/`specs/`/`tasks.md` pre-existed; acquired with
+  `--untracked-scope=exclude`.) Settle on completion.
+- [x] RED — `PlayerManagerTest.kt` (16 Robolectric `@Config(sdk=[34])` Turbine
+  tests: play queue/index/liveness, playSingle radio-live, toggle pause/resume
+  local, toggle-live-stops, stop-keeps-queue, next/prev clamp + empty no-op,
+  seek local vs live-noop, TIMEOUT/OFFLINE/STREAM_UNAVAILABLE banner ×3,
+  interactive-under-banner, retry-clears, retry-persistent, restore-paused
+  never-phantom, restore-empty→idle, InMemoryQueueStore round-trip, service
+  10 s constants), `MediaItemMapperTest.kt` (4 tests: extras literals match
+  provider contract, local `local:<id>`+`is_live=false`, radio
+  `radio:<uuid>`+`is_live=true`, bare item defaults non-live).
+  RED evidence: `:core:player:compileDebugUnitTestKotlin FAILED`,
+  `Unresolved reference` for `PlayerManager/PlayerUiState/PlayerError/
+  FakePlayerManager/PlayerExtras/QueueStore/PlaybackService` (impl absent).
+- [x] GREEN — 8 impl files per design §3 + player Req 1–6: `PlayerError.kt`
+  (TIMEOUT|OFFLINE|STREAM_UNAVAILABLE), `PlayerUiState.kt` (queue/index/
+  isPlaying/isLive/icyTitle/error + `positionMs` last-seek anchor for the
+  local seek bar, always 0 when live), `PlayerExtras.kt` (source-blind key
+  mirror — zero `provider/*` imports, verified by grep — plus
+  `isLive/sourceId/stableId/stationUuid/country` readers over
+  `mediaMetadata.extras`), `PlayerManager.kt` (interface: state/play/
+  playSingle/toggle/stop/next/prev/seekTo/retry; radio toggle-stops,
+  live seek no-op; no shuffle/repeat), `FakePlayerManager.kt` (main-sourceset
+  VM seam, Slice D `FakeFavoriteDao` precedent; + `failNextWith` /
+  `restore` test-only seams), `QueueStore.kt` (`SavedQueue` mediaIds+index+
+  position, `InMemoryQueueStore`, runCatching `PrefsQueueStore`),
+  `PlaybackService.kt` (`MediaSessionService`, single ExoPlayer,
+  `AudioAttributes(USAGE_MEDIA, MUSIC)` + `handleAudioFocus=true` via
+  `setAudioAttributes(…, true)`, `DefaultHttpDataSource` 10 s connect/read,
+  `Icy-MetaData: 1` request, `setHandleAudioBecomingNoisy(true)`,
+  best-effort prefs save on transitions + load on create, always starts
+  idle — never phantom-playing; FGS/notification/headset via Media3 session
+  automatics), `DefaultPlayerManager.kt` (`@Singleton @Inject`,
+  `MediaController` holder with optimistic pre-connect state + replay on
+  connect, listener→state mapping incl. ICY title when live and cause-chain
+  error mapping `SocketTimeout→TIMEOUT`, `UnknownHost/Connect→OFFLINE`,
+  else `STREAM_UNAVAILABLE`). Manifest declares the service
+  (`mediaPlayback` FGS type; permission in Slice I). Slice A
+  `PlayerScaffold` stub left in place (tasks do not order removal).
+- Fixes during GREEN:
+  - Kotlin block comments nest: ``provider/*`` inside KDoc opens a nested
+    comment → reworded (2 files).
+  - Media3 1.9.0 has no `AudioAttributes.Builder.setHandleAudioFocus`
+    (focus flag is the `setAudioAttributes(attrs, true)` arg) and no
+    `ERROR_CODE_IO_NETWORK_{READ_TIMEOUT,UNAVAILABLE}` → mapped the two
+    existing network codes + cause-chain heuristics.
+  - Library manifest needs `xmlns:android` (merger parse failure).
+  - `core/player/build.gradle.kts` gains catalog-pinned `hilt.android`
+    impl (annotations only; no ksp — app owns the graph). Media3 stays 1.9.0.
+  - Test bugs (not impl): StateFlow conflates equal values — persistent-retry
+    banner asserted via sticky `state.value`, empty-restore test now drives
+    play→restore so the idle transition emits.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0):
+  `:core:player:test --rerun-tasks` → BUILD SUCCESSFUL —
+  `PlayerManagerTest` 16/16, `MediaItemMapperTest` 4/4,
+  `PlayerScaffoldTest` 1/1 (×2 variants), 0 failures/errors/skipped.
+  Full `./gradlew test` → BUILD SUCCESSFUL — **220 tests, 0 failures,
+  0 errors, 0 skipped** (was 180; +40 net).
+  `assembleDebug` (clean, after deleting stale incremental APK — see size
+  note) → BUILD SUCCESSFUL.
+- APK size: Slice-G clean APK **66,343,354 bytes (~63.3 MB) — 40 MB gate
+  FAILS, but the breach predates this slice**: clean worktree build at
+  Slice-F commit `bde2f74` is already 66,310,446 bytes (~63.2 MB); Slice G
+  adds ~33 KB (8 classes + manifest entry). Slices B–F never ran
+  `assembleDebug`, so the 32.6→63.2 MB growth (Room, Retrofit/OkHttp,
+  icons-extended, lifecycle, media3-ui) went ungated. Uncompressed dex is
+  ~66 MB (classes.dex 44 MB Stored). Fixing the gate needs a size decision
+  outside Slice G's edit surface (R8/minify currently forbidden by design,
+  or a dependency diet) — flagged for parent, not attempted here.
+  (Also noted: incremental `assembleDebug` can append ~11 MB of orphaned
+  zip entries — always compare clean builds.)
+- Contract notes for later slices: `feature/*` VMs inject
+  `FakePlayerManager` (main sourceset, Robolectric-free); Slice I binds
+  `DefaultPlayerManager` as the `PlayerManager` Hilt binding and declares
+  `FOREGROUND_SERVICE` + `MEDIA_PLAYBACK` + notification permissions.
+  Full item restore after death needs source cooperation (only sources can
+  rebuild MediaItems from ids) — service persists context, coherence
+  (never phantom-playing) is tested.
+- Files: `core/player/src/main/.../player/{PlayerError,PlayerUiState,
+  PlayerExtras,PlayerManager,FakePlayerManager,QueueStore,PlaybackService,
+  DefaultPlayerManager}.kt`;
+  `core/player/src/test/.../player/{PlayerManagerTest,MediaItemMapperTest}.kt`;
+  `core/player/build.gradle.kts` (M: hilt-android impl);
+  `core/player/src/main/AndroidManifest.xml` (M: service declaration).
+
+## Remaining (explicitly out of scope for this slice)
+
+- Slices H–I untouched. No commits, no PRs, no pushes (per instructions).
+  Stop after Slice G.
+
+    ## Slice H — `feature/radio` discover + stations + favorites (radio Req 1–6; player Req 5)
+
+    - Attempt authority: `acquire` work-unit `slice-H`, `--max-changed-lines 2500`,
+      token `sha256:08ca390b…` → state `proceed`. (Untracked planning files
+      `design.md`/`specs/`/`tasks.md` pre-existed; acquired with
+      `--untracked-scope=exclude`.) Settle on completion.
+    - [x] RED — `RadioViewModelTest.kt` (13 Robolectric `@Config(sdk=[34])`
+      Turbine tests: fresh-cache zero-network serve, Empty, ErrorRetry,
+      stale-shown-then-replaced, failed-refresh keeps stale + Offline card +
+      retry-without-clearing-cache, local filter with zero per-keystroke
+      browse calls, segment switch without network, 3-tap play raises live
+      radio queue, index rows never played, favorite round-trip + restart,
+      index rows not favoritable, station Error with selection + back,
+      `search` never called), `FavoritesViewModelTest.kt` (6 tests: Empty→
+      Content, remove→undo restores, 10s undo expiry, restart persistence,
+      play raises live radio item, no-op undo), `RadioScreensTest.kt`
+      (7 Compose behavior tests: index rows + counts + local filter,
+      segment callback, bitrate/codec honesty + play/heart/radio badge,
+      Offline card + retry + refresh, Error retry, favorites play/remove +
+      undo snackbar, empty favorites; no screenshot tests).
+      RED evidence: `:feature:radio:compileDebugUnitTestKotlin FAILED`,
+      `Unresolved reference` for `RadioViewModel/FavoritesViewModel/
+      RadioUiState/FavoritesUiState/DiscoverScreen/…` (impl did not exist yet).
+    - [x] GREEN — 3 impl files per radio Req 1–6 + design §4/§7. Slice A
+      `RadioUiScaffold` placeholder left in place (tasks do not order removal;
+      harmless, as in Slices C–G).
+    - `RadioViewModel.kt` (plain class + injected scope, Slice F precedent;
+      deps only `Source`/`FavoriteDao`/`PlayerManager`/`DirectoryCache`):
+      Discover (Countries | Genres&tags + local text filter, zero source
+      calls per keystroke) + Stations (name + bitrate/codec via honest
+      mapping, generic icons in UI) + Empty/Error; fresh cache serves with
+      zero network, stale rows show immediately then fetch replaces, failed
+      fetch keeps stale with `offline=true` + retry (never clears cache);
+      `playStation` refuses empty-`streamUri` index rows (Slice E contract)
+      else `PlayerManager.playSingle(source.streamOf(..))`;
+      `toggleFavorite` refuses rows without `stationUuid` else Room
+      upsert/delete; favorites observed from DAO (restart persistence);
+      `refreshing` flag drives the pull-to-refresh indicator and keeps
+      retry emissions deterministic; `search()` is never called (Req 6).
+    - `FavoritesViewModel.kt`: Room-backed `Empty/Content`, `remove` holds
+      the full row in `pendingUndo` with a 10s expiry (`UNDO_WINDOW_MS`,
+      re-upsert restores), `play` maps `FavoriteStation → AudioItem →
+      `playSingle`` (blank urls never play). Stations-only by construction
+      (DAO stores `FavoriteStation` rows only).
+    - `RadioScreens.kt`: stateless `DiscoverScreen`/`StationsScreen`/
+      `FavoritesScreen` on shared `core/ui` states (`Loading/Empty/Offline/
+      ErrorRetry`, `SourceBadge(RADIO)`), `PullToRefreshBox` + explicit
+      refresh button, 1-tap play + heart with `station-play/fav-<uuid>`
+      testTags, favorites remove + Indefinite snackbar with Undo;
+      `RadioRouteScreen` dispatcher + `DiscoverRoute`/`FavoritesRoute`
+      stateful entries for Slice I wiring. No tops/random/name-search
+      control on any surface (Req 6).
+    - Fixes during GREEN:
+      - Test classpath needed catalog-pinned `serialization-json` impl
+        (`DirectoryCache` signatures expose `Json`), `media3-common` impl
+        (Slice F precedent), `lifecycle-runtime-compose` impl (routes),
+        material-icons core+extended (generic icons), ui-test-junit4 +
+        ui-test-manifest test deps, `isIncludeAndroidResources=true`
+        (Slice C/F precedent). No catalog edits — all aliases pre-pinned.
+      - Test bugs (not impl): every Turbine block must first consume the
+        initial `Loading`; never-ending DAO collector requires
+        `backgroundScope` (else `UncompletedCoroutinesError`); fake
+        `streamOf` must use the real `radioMediaItem` mapper or `isLive`
+        is false; undo assertions belong on emissions (restored `Content`
+        proves the re-upsert) not scheduler timing; post-openSelection
+        `Loading` must be consumed; fresh-cache init costs zero browse
+        calls (expected count is 2, not 3, in the search test).
+      - Impl sharpening from test pressure: refresh pre-shows cache only
+        when nothing suitable is on screen (no Offline-card flicker), and
+        keeps current rows with `refreshing=true` instead of re-emitting
+        `Loading` (no pull-to-refresh blank flash).
+    - GREEN evidence (JDK 17 Corretto + ANDROID_HOME, Media3 pinned 1.9.0 untouched):
+      `:feature:radio:test --rerun-tasks` → BUILD SUCCESSFUL —
+      `RadioViewModelTest` 13/13, `FavoritesViewModelTest` 6/6,
+      `RadioScreensTest` 7/7, `RadioUiScaffoldTest` 1/1 (×2 variants),
+      0 failures/errors/skipped.
+      Full `./gradlew test` → BUILD SUCCESSFUL — **272 tests, 0 failures,
+      0 errors, 0 skipped** (was 220; +52 = 26 new ×2 variants).
+    - Contract notes for Slice I: VMs are plain classes awaiting Hilt
+      binding (`RadioBrowserSource` + real `DirectoryCache` + DAOs +
+      `DefaultPlayerManager`); `DiscoverRoute`/`FavoritesRoute` are the
+      NavHost entries (`radio/discover`, `favorites`); mini-player/sheet
+      stay in `app` shell driven by `PlayerManager.state`.
+    - Files: `feature/radio/src/main/.../radio/{RadioViewModel,
+      FavoritesViewModel,RadioScreens}.kt`;
+      `feature/radio/src/test/.../radio/{RadioViewModelTest,
+      FavoritesViewModelTest,RadioScreensTest}.kt`;
+      `feature/radio/build.gradle.kts` (M: media3-common +
+      lifecycle-runtime-compose + serialization-json impl, icons,
+      ui-test deps, `isIncludeAndroidResources=true`).
+
+    ## Remaining (explicitly out of scope for this slice)
+
+    - Slice I untouched. No commits, no PRs, no pushes (per instructions).
+      Stop after Slice H.
+
+## Slice I — `core/permissions`, `feature/settings`, `app` wiring (fixred: red→green)
+
+- Attempt authority: `acquire` work-unit `slice-I-fixred` returned
+  `blocked/active_attempt` (prior attempt token
+  `sha256:b2c460bc…` still open after two timeouts); re-acquired with
+  `--token` → state `proceed`. Settled on completion (see done-state below).
+- [x] RED — tests already on disk from the timed-out attempts
+  (`AudioPermissionGateTest` 9 tests, `SettingsViewModelTest` 5 tests,
+  `ExpandabilityTest` 3 tests). RED evidence reproduced in this run:
+  `:app:kspDebugKotlin` → `Unclosed comment` (nested `/*` in KDoc, Slice G
+  pattern); `SettingsViewModelTest` → 4× `UncompletedCoroutinesError`
+  (60 s hang each) + restart `expected:<DARK> but was:<SYSTEM>`.
+- [x] GREEN — fixes (only `core/permissions/**`, `feature/settings/**`,
+  `app/**` touched):
+  - `AppModules.kt:35` / `AppNav.kt:41`: `` provider/* `` inside KDoc opened a
+    nested Kotlin block comment → reworded to "provider source module" /
+    "future provider-source ids" (grep now finds zero `provider/*` in the
+    three trees). KSP passes.
+  - `SettingsViewModelTest`: every ViewModel now runs on `backgroundScope`
+    (cancelled at teardown, never awaited — the 4 hangs are gone; suite runs
+    in 0.2 s); fake `ThemeDao` is shared across the simulated restart (same
+    instance, Slice H precedent). Two further findings while greening:
+    (1) the `io` dispatcher must share the runTest scheduler
+    (`StandardTestDispatcher(testScheduler)` — a detached
+    `StandardTestDispatcher()` has its own scheduler that
+    `advanceUntilIdle()` never pumps, so the DAO write never landed);
+    (2) the restart write is driven from inside Turbine collection
+    (`await`-until-DARK loop) rather than relying on a bare
+    `advanceUntilIdle()` outside collection.
+  - `app/build.gradle.kts`: added catalog-pinned `libs.serialization.json`
+    impl (`RadioBrowserClient` signatures expose `Json` — Slice H precedent)
+    and `material-icons-core` + `material-icons-extended`
+    (`MusicNote`/`Radio` live in extended — Slice F precedent). No catalog
+    edits; Media3 stays pinned 1.9.0.
+- GREEN evidence (JDK 17 Corretto + ANDROID_HOME, all via `nohup` + poll,
+  never one foreground command >3 min):
+  - `:feature:settings:testDebugUnitTest` → BUILD SUCCESSFUL —
+    `SettingsViewModelTest` 5/5, `SettingsScaffoldTest` 1/1.
+  - `:core:permissions:testDebugUnitTest :app:testDebugUnitTest` →
+    BUILD SUCCESSFUL — `AudioPermissionGateTest` 9/9,
+    `AudioPermissionTest` 2/2, `ExpandabilityTest` 3/3,
+    `ScaffoldTest` 1/1.
+  - Full `./gradlew test` → BUILD SUCCESSFUL (605 tasks) — 62 classes,
+    **306 tests, 0 failures, 0 errors, 0 skipped** (was 272 at Slice H).
+  - Clean `./gradlew assembleDebug` → BUILD SUCCESSFUL.
+- Gates task status (partially blocked, recorded honestly):
+  - `./gradlew test` green ✓; `assembleDebug` builds ✓;
+    `scripts/audit-gates.sh` → workflow/JDK17 ✓, **zero prohibited SDKs** ✓,
+    **permissions allowlist** ✓
+    (`FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `INTERNET`,
+    `POST_NOTIFICATIONS`, `READ_EXTERNAL_STORAGE`, `READ_MEDIA_AUDIO`),
+    **egress** = radio-browser mirrors (`de1/de2/nl1` + `all.api` bootstrap)
+    + click-count + streams only, zero trackers ✓.
+  - `APK 66,687,418 bytes (~63.6 MB)` → **40 MB gate FAILS**. Pre-existing:
+    Slice G measured 63.3 MB at Slice-F commit; Slice I adds ~0.4 MB
+    (settings UI + app shell + icons-extended). Fixing needs a parent size
+    decision outside Slice I's edit surface (R8/minify is forbidden by
+    scaffold Req 6; alternative is a dependency diet) — NOT attempted here.
+  - On-device manual checks (cold-start→radio-audible ≤3 taps, screen-off +
+    notification sync, 10 s-timeout banner+retry on hardware, theme +
+    favorites round-trips on device) cannot run in this headless environment;
+    theme/favorites persistence is unit-covered (restart tests green).
+- Files: `app/src/main/.../app/{AppModules,AppNav}.kt` (M: KDoc reword);
+  `app/build.gradle.kts` (M: serialization-json + icons deps);
+  `feature/settings/src/test/.../SettingsViewModelTest.kt` (M: backgroundScope
+  + shared-scheduler io + collection-driven restart). No commits, no PRs,
+  no pushes (per instructions). Stop after Slice I.
