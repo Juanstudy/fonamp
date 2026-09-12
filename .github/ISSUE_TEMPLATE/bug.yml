@@ -1,0 +1,49 @@
+name: Bug report
+description: Reportar un error reproducible en la app.
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Version / tag
+      description: "Version donde viste el bug (ejemplo v0.1.0-slice-a o rama)."
+      placeholder: "v0.1.0-slice-a"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      description: "Pasos minimos para ver el error."
+      placeholder: "1. Abrir la app. 2. Reproducir el error."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      description: "Que esperabas que pase."
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+      description: "Que pasa en realidad (logs, screenshots si aplica)."
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidad
+      multiple: false
+      options:
+        - baja
+        - media
+        - alta
+        - bloqueante
+      default: 0
+    validations:
+      required: true

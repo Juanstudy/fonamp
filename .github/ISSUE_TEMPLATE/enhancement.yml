@@ -1,0 +1,49 @@
+name: Mejora / deuda tecnica
+description: Proponer una mejora u optimizacion (performance, tamano, refactor).
+title: "[mejora]: "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: contexto
+    attributes:
+      label: Contexto
+      description: "Donde duele hoy (modulo, build, CI, UX)."
+      placeholder: "APK debug / release pipeline / feature radio"
+    validations:
+      required: true
+  - type: textarea
+    id: problema
+    attributes:
+      label: Problema actual
+      description: "Evidencia actual con numeros (tamano, tiempos, logs)."
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Propuesta
+      description: "Que cambiar y como medir exito."
+    validations:
+      required: true
+  - type: dropdown
+    id: impacto
+    attributes:
+      label: Impacto
+      multiple: false
+      options:
+        - bajo
+        - medio
+        - alto
+      default: 1
+    validations:
+      required: true
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Aceptacion
+      options:
+        - label: Tengo evidencia actual (numeros, APK, CI log)
+          required: true
+        - label: Defini como medir la mejora
+          required: true
