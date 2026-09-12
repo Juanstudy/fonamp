@@ -58,6 +58,7 @@ import com.fonamp.feature.library.CollectionRoute
 import com.fonamp.feature.radio.DiscoverRoute
 import com.fonamp.feature.radio.FavoritesRoute
 import com.fonamp.feature.radio.RadioRouteScreen
+import com.fonamp.feature.radio.stationUuid
 import com.fonamp.feature.settings.SettingsRoute
 import com.fonamp.provider.api.BrowseQuery
 import kotlinx.coroutines.flow.Flow
@@ -77,11 +78,16 @@ import kotlinx.coroutines.flow.Flow
  * - `AudioPermissionGate` wiring lives on the Collection entry only
  *   (permissions Req 2–3); `NotificationGate` fires lazily on first playback
  *   with tolerated failure (design §6).
+ * - The sheet heart is radio-only: `isFavorite` reads the shared DAO-backed
+ *   `FavoritesViewModel.favoriteIds` and `onToggleFavorite` delegates to its
+ *   `toggleMediaItem` (same delete-or-upsert semantics as the station-row
+ *   hearts, Slice H). Local playback passes `onToggleFavorite = null`, so no
+ *   heart renders there. The holder is resolved lazily inside the sheet, so
+ *   the DAO flow (singleton) is the single source of truth across the
+ *   per-entry `RadioHolderViewModel` instances.
  *
- * Deviation note: [PlayerSheet]'s optional radio favorite toggle is left
- * unwired (`onToggleFavorite = null`) — hearts already live on the station
- * rows and Favorites screen (Slice H), and wiring DAO favorites into the
- * process-scoped shell would couple it to radio state.
+ * Wired note: [PlayerSheet]'s radio favorite toggle reads the DAO-backed
+ * [FavoritesViewModel] (radio-only; local passes `onToggleFavorite = null`).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -205,6 +211,11 @@ fun FonampRoot(
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             ) {
                 val current = playerState.queue.getOrNull(playerState.index)
+                // Activity-scoped holder: the DAO flow is the shared truth,
+                // so this converges with the per-entry holders' hearts.
+                val favoritesVm = hiltViewModel<RadioHolderViewModel>().favoritesVm
+                val favoriteIds by favoritesVm.favoriteIds.collectAsStateWithLifecycle()
+                val currentStationUuid = current?.stationUuid()
                 PlayerSheet(
                     title = current?.mediaMetadata?.title?.toString() ?: "Nothing playing",
                     subtitle = current?.mediaMetadata?.artist?.toString(),
@@ -217,6 +228,14 @@ fun FonampRoot(
                     onTogglePlayPause = player::togglePlayPause,
                     onClose = { showSheet = false },
                     icyTitle = playerState.icyTitle,
+                    isFavorite = currentStationUuid != null && favoriteIds.contains(currentStationUuid),
+                    onToggleFavorite = if (playerState.isLive && current != null &&
+                        currentStationUuid != null
+                    ) {
+                        { favoritesVm.toggleMediaItem(current) }
+                    } else {
+                        null
+                    },
                     errorMessage = playerState.error?.message,
                     onRetry = player::retry,
                 )

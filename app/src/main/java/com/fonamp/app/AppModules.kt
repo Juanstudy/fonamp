@@ -88,9 +88,20 @@ object DatabaseModule {
 }
 
 /**
- * Slice F contract, Slice I binding: the Collection tab's [LibraryPlayer] seam
- * has the Slice G `PlayerManager.play` signature, so this adapter is the
- * drop-in production binding — no `feature/library` change needed.
+ * Slice F contract, Slice I binding — "Fav + seam" decision (kept, not removed).
+ *
+ * The Collection tab's [LibraryPlayer] seam has the Slice G `PlayerManager.play`
+ * signature, so this adapter is the drop-in production binding: at runtime
+ * there is exactly one player (the [PlayerManager] singleton) and this class
+ * is the sole bridge from the narrow Collection contract to it.
+ *
+ * Why the interface stays: `feature/library` unit tests assert against a
+ * hand-written recording `FakeLibraryPlayer` (no MockK per the stack), and
+ * deleting the seam would ripple through `LibraryViewModel`,
+ * `CollectionHolderViewModel`, and every test for zero behavior gain — the
+ * double seam is compile-time only, with no runtime divergence. Do not widen
+ * this interface (no pause/next/seek here); playback controls belong to
+ * [PlayerManager].
  */
 class LibraryPlayerAdapter @javax.inject.Inject constructor(
     private val player: PlayerManager,

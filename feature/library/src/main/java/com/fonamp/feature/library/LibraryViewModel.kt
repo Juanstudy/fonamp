@@ -47,7 +47,11 @@ sealed interface LibraryUiState {
  * Slice F: Collection state holder — talks to `LocalSource` only (design §1).
  *
  * A plain class (not an Android `ViewModel`) so unit tests inject a test
- * scope; Slice I binds it into the Hilt/app graph. Grouping
+ * scope; Slice I binds it into the Hilt/app graph. The [player] param is the
+ * `LibraryBridgeModule`-bound adapter over the shared `PlayerManager`
+ * singleton ("Fav + seam": `LibraryPlayer` stays the sole narrow bridge —
+ * see its KDoc), so tap-to-play here and every other tab share one runtime
+ * player. Grouping
  * Songs/Artists/Albums derives from one `browse(BrowseQuery())` result —
  * one MediaStore pass (design §2). The [query] text filter is the cheap
  * LIB-5 stretch: purely local, zero extra source reads.

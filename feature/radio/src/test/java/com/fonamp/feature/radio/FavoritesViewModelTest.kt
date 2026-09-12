@@ -1,6 +1,7 @@
 package com.fonamp.feature.radio
 
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import app.cash.turbine.test
 import com.fonamp.core.database.FakeFavoriteDao
 import com.fonamp.core.database.FavoriteStation
@@ -10,6 +11,7 @@ import com.fonamp.provider.api.BrowseQuery
 import com.fonamp.provider.api.Source
 import com.fonamp.provider.api.SourceKind
 import com.fonamp.provider.api.SourceResult
+import com.fonamp.provider.api.localMediaItem
 import com.fonamp.provider.api.radioMediaItem
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
@@ -159,5 +161,90 @@ class FavoritesViewModelTest {
         }
         assertNull(viewModel.pendingUndo.value)
         assertNull(dao.byId("uuid-1"))
+    }
+
+    // "Fav + seam": sheet-heart path — toggleMediaItem + stationUuid + favoriteIds.
+
+    private fun playingStation(
+        uuid: String = "uuid-9",
+        streamUrl: String = "http://example.com/uuid-9",
+    ): MediaItem = radioMediaItem(
+        AudioItem(
+            sourceId = "radio-browser",
+            stableId = uuid,
+            title = "Night Wave",
+            streamUri = streamUrl,
+            stationUuid = uuid,
+            country = "Germany",
+            tags = listOf("jazz"),
+        ),
+    )
+
+    @Test
+    fun `sheet toggle adds the playing station then removes it`() = runTest {
+        val dao = FakeFavoriteDao()
+        val viewModel = vm(dao, scope = backgroundScope)
+        viewModel.state.test {
+            assertTrue(awaitItem() is FavoritesUiState.Loading)
+            assertTrue(awaitItem() is FavoritesUiState.Empty)
+            viewModel.toggleMediaItem(playingStation())
+            val content = awaitItem() as FavoritesUiState.Content
+            assertTrue(content.favorites.any { it.stationUuid == "uuid-9" })
+            assertEquals("Night Wave", dao.byId("uuid-9")?.name)
+            assertEquals("http://example.com/uuid-9", dao.byId("uuid-9")?.streamUrl)
+            assertTrue(viewModel.favoriteIds.value.contains("uuid-9"))
+            viewModel.toggleMediaItem(playingStation())
+            assertTrue(awaitItem() is FavoritesUiState.Empty)
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertNull(dao.byId("uuid-9"))
+        assertTrue(viewModel.favoriteIds.value.isEmpty())
+    }
+
+    @Test
+    fun `sheet toggle on a local item is a no-op`() = runTest {
+        val dao = FakeFavoriteDao()
+        val viewModel = vm(dao, scope = backgroundScope)
+        val local = localMediaItem(
+            AudioItem(
+                sourceId = "local",
+                stableId = "1",
+                title = "Blue Line",
+                streamUri = "content://media/external/audio/media/1",
+            ),
+        )
+        assertNull(local.stationUuid())
+        viewModel.state.test {
+            assertTrue(awaitItem() is FavoritesUiState.Loading)
+            assertTrue(awaitItem() is FavoritesUiState.Empty)
+            viewModel.toggleMediaItem(local)
+            expectNoEvents()
+        }
+        assertTrue(viewModel.favoriteIds.value.isEmpty())
+    }
+
+    @Test
+    fun `sheet toggle refuses an insert without a stream uri`() = runTest {
+        val dao = FakeFavoriteDao()
+        val viewModel = vm(dao, scope = backgroundScope)
+        viewModel.state.test {
+            assertTrue(awaitItem() is FavoritesUiState.Loading)
+            assertTrue(awaitItem() is FavoritesUiState.Empty)
+            viewModel.toggleMediaItem(playingStation(streamUrl = ""))
+            expectNoEvents()
+        }
+        assertNull(dao.byId("uuid-9"))
+        assertTrue(viewModel.favoriteIds.value.isEmpty())
+    }
+
+    @Test
+    fun `stationUuid prefers extras and falls back to the radio mediaId`() {
+        assertEquals("uuid-9", playingStation().stationUuid())
+        val bare = MediaItem.Builder()
+            .setMediaId("radio:bare-1")
+            .setUri("http://example.com/bare-1")
+            .setMediaMetadata(MediaMetadata.Builder().setTitle("Bare").build())
+            .build()
+        assertEquals("bare-1", bare.stationUuid())
     }
 }
