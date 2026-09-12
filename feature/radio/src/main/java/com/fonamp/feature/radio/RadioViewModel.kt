@@ -13,6 +13,7 @@ import com.fonamp.provider.api.BrowseQuery
 import com.fonamp.provider.api.Source
 import com.fonamp.provider.api.SourceError
 import com.fonamp.provider.api.SourceResult
+import com.fonamp.provider.radio.CuratedStations
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +55,7 @@ sealed interface RadioUiState {
         val offline: Boolean = false,
         val favorites: Set<String> = emptySet(),
         val refreshing: Boolean = false,
+        val curated: List<AudioItem> = emptyList(),
     ) : RadioUiState
     data class Stations(
         val selection: BrowseQuery,
@@ -85,6 +87,7 @@ class RadioViewModel(
     private val scope: CoroutineScope,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val nowMs: () -> Long = { System.currentTimeMillis() },
+    private val curatedProvider: () -> List<AudioItem> = CuratedStations::browseCurated,
 ) {
     private val _state = MutableStateFlow<RadioUiState>(RadioUiState.Loading)
     val state: StateFlow<RadioUiState> = _state.asStateFlow()
@@ -260,6 +263,7 @@ class RadioViewModel(
             offline = offline,
             favorites = favoriteIds,
             refreshing = refreshing,
+            curated = curatedProvider(),
         ).let { it.copy(visible = visible(it, it.query)) }
         lastDiscover = discover
         _state.value = discover
@@ -282,6 +286,7 @@ class RadioViewModel(
             offline = offline,
             favorites = favoriteIds,
             refreshing = refreshing,
+            curated = curatedProvider(),
         ).let { it.copy(visible = visible(it, it.query)) }
         lastDiscover = discover
         _state.value = discover

@@ -363,4 +363,82 @@ class RadioViewModelTest {
         assertEquals(2, source.browseCalls)
     }
 
+
+
+    @Test
+    fun `discover exposes curated presets and tile tap browses tag`() = runTest {
+        val cache = DirectoryCache()
+        cache.putIndex(cachedIndex())
+        val curated = listOf(
+            AudioItem(
+                sourceId = "radio-browser",
+                stableId = "uuid-groove",
+                title = "Groove Salad",
+                streamUri = "https://example.com/groove.mp3",
+                stationUuid = "uuid-groove",
+            ),
+        )
+        val source = FakeRadioSource()
+        val player = FakePlayerManager()
+        val dao = FakeFavoriteDao()
+        val viewModel = RadioViewModel(
+            source, dao, player, cache, backgroundScope,
+            curatedProvider = { curated },
+        )
+        viewModel.state.test {
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            val discover = awaitItem() as RadioUiState.Discover
+            assertEquals(listOf("Groove Salad"), discover.curated.map { it.title })
+            // setQuery filters the index only — curated stays visible.
+            viewModel.setQuery("zzz-no-match")
+            val filtered = awaitItem() as RadioUiState.Discover
+            assertTrue(filtered.visible.isEmpty())
+            assertEquals(listOf("Groove Salad"), filtered.curated.map { it.title })
+            // Curated play delegates to the player…
+            viewModel.playStation(curated.single())
+            // …and the tile path reuses browse(BrowseQuery(tag)) with cache+mirrors.
+            viewModel.openSelection(BrowseQuery(tag = "lofi"), "Lofi")
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertTrue(player.state.value.isPlaying)
+        assertEquals("radio:uuid-groove", player.state.value.queue.single().mediaId)
+        assertTrue(source.queries.contains(BrowseQuery(tag = "lofi")))
+        // Curated favorite round-trips through the existing FavoriteDao.
+        val second = RadioViewModel(source, dao, player, cache, backgroundScope)
+        second.state.test {
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            awaitItem() as RadioUiState.Discover
+            second.toggleFavorite(curated.single())
+            val fav = awaitItem() as RadioUiState.Discover
+            assertTrue(fav.favorites.contains("uuid-groove"))
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertEquals(1, dao.observeAll().first().size)
+    }
+
+    @Test
+    fun `curated item without stationUuid cannot be favorited`() = runTest {
+        val cache = DirectoryCache()
+        cache.putIndex(cachedIndex())
+        val source = FakeRadioSource()
+        val dao = FakeFavoriteDao()
+        val viewModel = RadioViewModel(source, dao, FakePlayerManager(), cache, backgroundScope)
+        viewModel.state.test {
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            awaitItem() as RadioUiState.Discover
+            viewModel.toggleFavorite(
+                AudioItem(
+                    sourceId = "radio-browser",
+                    stableId = "curated:night-wave",
+                    title = "Night Wave",
+                    streamUri = "https://example.com/night.mp3",
+                    stationUuid = null,
+                ),
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertTrue(dao.observeAll().first().isEmpty())
+    }
 }
