@@ -24,7 +24,7 @@ Publica el APK en GitHub Releases.
 
 ### Cómo sacar un release
 ```bash
-git tag v0.0.2
+git tag -a v0.0.2 -m "fonamp 0.0.2"
 git push origin v0.0.2
 # GitHub → Releases → aparece en 3-5 min con el .apk adjunto
 ```
@@ -36,6 +36,9 @@ git push origin v0.0.2
 - El tag `vX.Y.Z` se crea sobre el commit del bump y se pushea: eso dispara `release.yml`.
 - Releases publican build **debug** (sin firma, prueba interna). El día del release firmado, el gate `<40MB` pasa a ser duro.
 - Ejemplo 0.0.2: `735c3d6` feat artwork + `5ba032f` bump → tag `v0.0.2`.
+- Tags **anotados** siempre: `git tag -a vX.Y.Z -m "fonamp X.Y.Z"` (autor+fecha+mensaje; los livianos pierden metadata).
+- `main` está **protegida**: requiere check `build` (CI) en verde, sin force-push ni borrado. Se puso por API; equivale en UI a Settings → Branches → Add rule → `main` → ✅ Require status checks (`build`) + ✅ Do not allow force pushes/deletions. `enforce_admins: false` (solo-dev: podés pushear directo, pero nada se mergea en rojo).
+- Release notes: `generate_release_notes` + 3-5 bullets humanos por versión (qué trae, en lenguaje de usuario). Cuando haya usuarios externos, el release sale en `draft` primero y se publica a mano tras probar el APK.
 
 ## Gates y deuda conocida
 - `scripts/audit-gates.sh`: debug APK **monitoreado** (sin gate duro en v1); gate `<40MB` aplica solo a `app-release.apk` cuando exista pipeline release.
