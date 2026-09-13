@@ -26,11 +26,23 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Assemble debug APK
-        run: ./gradlew assembleDebug
+      - name: Assemble release APK (unsigned, R8 + shrink)
+        run: ./gradlew assembleRelease
+
+      - name: Check release APK size (<40MB)
+        run: |
+          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          ls -lh app/build/outputs/apk/release/
+          SIZE=$(stat -c%s "$APK")
+          echo "release APK: $SIZE bytes ($(numfmt --to=iec "$SIZE"))"
+          MAX=$((40 * 1024 * 1024))
+          if [ "$SIZE" -ge "$MAX" ]; then
+            echo "FAIL: release APK exceeds 40MB"
+            exit 1
+          fi
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk fonamp-${{ github.ref_name }}.apk
+        run: cp app/build/outputs/apk/release/app-release-unsigned.apk fonamp-${{ github.ref_name }}.apk
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2

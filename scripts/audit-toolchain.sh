@@ -44,11 +44,18 @@ else
   fail "gradle/libs.versions.toml absent"
 fi
 
-# 3. no isMinifyEnabled=true anywhere (v1 ships debug APK, no R8)
-if grep -rn 'isMinifyEnabled\s*=\s*true' "$ROOT" --include='*.kts' --include='*.gradle' 2>/dev/null | grep -qv '.git/'; then
-  fail "isMinifyEnabled=true found (forbidden in v1)"
+# 3. R8 allowed ONLY in :app release (debug ships unminified in v1).
+APP_BUILD_FILE="$ROOT/app/build.gradle.kts"
+if grep -rn 'isMinifyEnabled\s*=\s*true' "$ROOT" --include='*.kts' --include='*.gradle' 2>/dev/null | grep -v '.git/' | grep -v "$APP_BUILD_FILE" | grep -q .; then
+  fail "isMinifyEnabled=true found outside app/build.gradle.kts (only :app release may minify)"
 else
-  pass "no isMinifyEnabled=true"
+  if grep -qzP '(?s)debug\s*\{[^}]*isMinifyEnabled\s*=\s*true' "$APP_BUILD_FILE" 2>/dev/null; then
+    fail "isMinifyEnabled=true found in debug block (debug must stay unminified)"
+  elif grep -qzP '(?s)release\s*\{[^}]*isMinifyEnabled\s*=\s*true' "$APP_BUILD_FILE" 2>/dev/null; then
+    pass "R8 enabled only in :app release (debug unminified)"
+  else
+    fail "app/build.gradle.kts must set isMinifyEnabled=true in release { } and keep debug { } at false"
+  fi
 fi
 
 # 4. app module declares minSdk 29 / target+compile 35

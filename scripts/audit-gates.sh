@@ -32,8 +32,11 @@ if [ -f "$APK" ]; then
 else
   fail "debug APK absent (run ./gradlew assembleDebug)"
 fi
-REL="$ROOT/app/build/outputs/apk/release/app-release.apk"
-if [ -f "$REL" ]; then
+REL=""
+for cand in "$ROOT/app/build/outputs/apk/release/app-release-unsigned.apk" "$ROOT/app/build/outputs/apk/release/app-release.apk"; do
+  if [ -f "$cand" ]; then REL="$cand"; break; fi
+done
+if [ -n "$REL" ]; then
   RSIZE=$(stat -c%s "$REL")
   MAX=$((40 * 1024 * 1024))
   if [ "$RSIZE" -lt "$MAX" ]; then pass "release APK $(numfmt --to=iec "$RSIZE") < 40 MB";
