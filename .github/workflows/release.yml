@@ -26,12 +26,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Assemble release APK (unsigned, R8 + shrink)
+      - name: Restore release keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > /tmp/fonamp-release.jks
+
+      - name: Assemble signed release APK (R8 + shrink)
+        env:
+          FONAMP_STORE_FILE: /tmp/fonamp-release.jks
+          FONAMP_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          FONAMP_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          FONAMP_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
       - name: Check release APK size (<40MB)
         run: |
-          APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          APK=app/build/outputs/apk/release/app-release.apk
           ls -lh app/build/outputs/apk/release/
           SIZE=$(stat -c%s "$APK")
           echo "release APK: $SIZE bytes ($(numfmt --to=iec "$SIZE"))"
@@ -42,7 +50,7 @@ jobs:
           fi
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/release/app-release-unsigned.apk fonamp-${{ github.ref_name }}.apk
+        run: cp app/build/outputs/apk/release/app-release.apk fonamp-${{ github.ref_name }}.apk
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2

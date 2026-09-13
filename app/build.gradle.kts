@@ -6,6 +6,20 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+import java.util.Properties
+
+// Release signing: local `keystore.properties` (gitignored) or env vars
+// (FONAMP_STORE_FILE/PASSWORD/KEY_ALIAS/KEY_PASSWORD, used by CI).
+// Absent both, release builds unsigned.
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use(::load)
+}
+fun signingProp(name: String, env: String): String? =
+    keystoreProps.getProperty(name)?.ifBlank { null } ?: System.getenv(env)
+val releaseStoreFile = signingProp("storeFile", "FONAMP_STORE_FILE")?.let(::file)
+val hasReleaseSigning = releaseStoreFile != null && releaseStoreFile.exists()
+
 android {
     namespace = "com.fonamp.app"
     compileSdk = 35
@@ -18,12 +32,25 @@ android {
         versionName = "0.0.5"
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = releaseStoreFile
+                storePassword = signingProp("storePassword", "FONAMP_STORE_PASSWORD")
+                keyAlias = signingProp("keyAlias", "FONAMP_KEY_ALIAS")
+                keyPassword = signingProp("keyPassword", "FONAMP_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         // v1 ships a direct debug APK: no R8/minify (scaffold Req 6).
         debug {
             isMinifyEnabled = false
         }
         release {
+            // Signed when keystore.properties/env is present, unsigned otherwise.
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
