@@ -4,6 +4,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -56,6 +57,8 @@ class PlaybackService : MediaSessionService() {
             .setAllowCrossProtocolRedirects(true)
             .setDefaultRequestProperties(mapOf(ICY_REQUEST_HEADER to ICY_REQUEST_VALUE))
 
+        val dataSourceFactory = DefaultDataSource.Factory(this, httpDataSource)
+
         // handleAudioFocus=true is passed to setAudioAttributes below (the
         // Media3 Builder has no such setter; focus handling lives there).
         val audioAttributes = AudioAttributes.Builder()
@@ -66,7 +69,7 @@ class PlaybackService : MediaSessionService() {
         val exoPlayer = ExoPlayer.Builder(this)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(httpDataSource))
+            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
             .build()
         player = exoPlayer
         exoPlayer.addListener(object : Player.Listener {
