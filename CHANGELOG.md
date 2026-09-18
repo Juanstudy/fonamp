@@ -4,6 +4,14 @@ Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Ch
 
 ## [Unreleased]
 
+## [0.0.6] — 2026-09-18
+### Added
+- Pipeline de release firmado con keystore propio y secrets en CI (`release.yml`).
+- README completo para GitHub con diseño visual, hero y diagramas de arquitectura.
+### Changed
+- APK release con R8 y shrink habilitados, bajando a 7.3MB con gate duro `<40MB`.
+- Rama `main` protegida con check de CI `build` requerido.
+
 ## [0.0.5] — 2026-09-12
 ### Fixed
 - El APK debug bajó de 67.4MB a 35.6MB (−47%): fuera `material-icons-extended`, 6 vectores propios verbatim, cero cambio visual (cierra issue #2).
