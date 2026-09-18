@@ -21,6 +21,7 @@ object PlayerExtras {
     const val KEY_IS_LIVE = "is_live"
     const val KEY_STATION_UUID = "station_uuid"
     const val KEY_COUNTRY = "country"
+    const val KEY_DURATION_MS = "duration_ms"
 }
 
 /** True for radio streams (`mediaId=radio:<uuid>`, `is_live=true`). */
@@ -42,3 +43,7 @@ fun MediaItem.stationUuid(): String? =
 /** Radio country label; null for local items or when undisclosed. */
 fun MediaItem.country(): String? =
     mediaMetadata.extras?.getString(PlayerExtras.KEY_COUNTRY)
+
+/** Track duration in milliseconds; null for radio or when undisclosed. */
+fun MediaItem.durationMs(): Long? =
+    mediaMetadata.extras?.takeIf { it.containsKey(PlayerExtras.KEY_DURATION_MS) }?.getLong(PlayerExtras.KEY_DURATION_MS)

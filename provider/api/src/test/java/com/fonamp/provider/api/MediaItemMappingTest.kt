@@ -63,6 +63,7 @@ class MediaItemMappingTest {
         assertEquals("local", extras.getString(SourceExtras.KEY_SOURCE_ID))
         assertEquals("42", extras.getString(SourceExtras.KEY_STABLE_ID))
         assertFalse(extras.getBoolean(SourceExtras.KEY_IS_LIVE))
+        assertEquals(180_000L, extras.getLong(SourceExtras.KEY_DURATION_MS))
     }
 
     @Test

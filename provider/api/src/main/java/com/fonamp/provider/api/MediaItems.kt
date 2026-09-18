@@ -16,6 +16,7 @@ fun localMediaItem(item: AudioItem): MediaItem {
         putString(SourceExtras.KEY_SOURCE_ID, item.sourceId)
         putString(SourceExtras.KEY_STABLE_ID, item.stableId)
         putBoolean(SourceExtras.KEY_IS_LIVE, false)
+        item.durationMs?.let { putLong(SourceExtras.KEY_DURATION_MS, it) }
     }
     val metadata = MediaMetadata.Builder()
         .setTitle(item.title)
