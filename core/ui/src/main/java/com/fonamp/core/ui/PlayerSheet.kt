@@ -150,21 +150,29 @@ fun PlayerSheet(
                     .testTag("player-progress-section"),
             ) {
                 var isDragging by remember { mutableStateOf(false) }
-                var dragPosition by remember { mutableFloatStateOf(0f) }
+                var dragFraction by remember { mutableFloatStateOf(0f) }
 
-                val currentPosition = if (isDragging) dragPosition else positionMs.toFloat().coerceIn(0f, durationMs.toFloat())
+                val durationFloat = durationMs.toFloat()
+                val positionFraction =
+                    (positionMs.toFloat() / durationFloat).coerceIn(0f, 1f)
+                val currentFraction = if (isDragging) dragFraction else positionFraction
+                val displayedMs =
+                    if (isDragging) (dragFraction * durationFloat).toLong() else positionMs
 
                 Slider(
-                    value = currentPosition,
+                    value = currentFraction,
                     onValueChange = {
                         isDragging = true
-                        dragPosition = it
+                        dragFraction = it.coerceIn(0f, 1f)
                     },
                     onValueChangeFinished = {
                         isDragging = false
-                        onSeekTo?.invoke(dragPosition.toLong())
+                        val target = (dragFraction * durationFloat).toLong()
+                            .coerceIn(0L, durationMs)
+                        onSeekTo?.invoke(target)
                     },
-                    valueRange = 0f..durationMs.toFloat(),
+                    valueRange = 0f..1f,
+                    enabled = (onSeekTo != null),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("player-slider"),
@@ -174,7 +182,7 @@ fun PlayerSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = formatDuration(if (isDragging) dragPosition.toLong() else positionMs),
+                        text = formatDuration(displayedMs),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.testTag("player-current-time"),

@@ -7,10 +7,12 @@ import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.unit.dp
 import org.junit.Rule
@@ -279,7 +281,9 @@ class UiStatesTest {
 
     @Test
     fun `player sheet shows progress slider and times when duration is provided`() {
-        var seekPosition = -1L
+        val positionMs = 65_000L
+        val durationMs = 185_000L
+        val seeks = mutableListOf<Long>()
         var prevClicked = false
         var nextClicked = false
         rule.setContent {
@@ -291,9 +295,9 @@ class UiStatesTest {
                     isPlaying = true,
                     onTogglePlayPause = {},
                     onClose = {},
-                    positionMs = 65_000L,
-                    durationMs = 185_000L,
-                    onSeekTo = { seekPosition = it },
+                    positionMs = positionMs,
+                    durationMs = durationMs,
+                    onSeekTo = { seeks += it },
                     onPrev = { prevClicked = true },
                     onNext = { nextClicked = true },
                 )
@@ -310,6 +314,17 @@ class UiStatesTest {
 
         rule.onNodeWithTag("player-next").performScrollTo().performClick()
         assert(nextClicked) { "expected next click" }
+
+        // A broken onSeekTo (never invoked, or invoked with an unmapped value)
+        // must fail: drive the slider to 75% via its SetProgress action and
+        // require the callback with the exact mapped position (0.75 * 185s).
+        rule.onNodeWithTag("player-slider").performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) {
+                it(0.75f)
+            }
+        assert(seeks.isNotEmpty()) { "expected onSeekTo to fire after slider seek" }
+        val lastSeek = seeks.last()
+        org.junit.Assert.assertEquals(138_750L, lastSeek)
     }
 
     @Test
