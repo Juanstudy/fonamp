@@ -4,7 +4,7 @@
 App Android nativa (Kotlin + Jetpack Compose + Hilt + Media3).
 - `applicationId`: `com.fonamp.app` — `minSdk 29`, `targetSdk 35`, JDK 17 (Corretto)
 - Módulos: `:app`, `:core:*` (player, network, database, permissions, ui), `:provider:*` (api, radio, local), `:feature:*` (library, radio, settings)
-- Versión actual: `0.0.6` (`versionCode 6`) en `app/build.gradle.kts`
+- Versión actual: `0.0.7` (`versionCode 7`) en `app/build.gradle.kts`
 
 ## Workflows CI/CD
 
@@ -39,7 +39,14 @@ git push origin v0.0.2
 - Ejemplo 0.0.2: `735c3d6` feat artwork + `5ba032f` bump → tag `v0.0.2`.
 - Tags **anotados** siempre: `git tag -a vX.Y.Z -m "fonamp X.Y.Z"` (autor+fecha+mensaje; los livianos pierden metadata).
 - `main` está **protegida**: requiere check `build` (CI) en verde, sin force-push ni borrado. Se puso por API; equivale en UI a Settings → Branches → Add rule → `main` → ✅ Require status checks (`build`) + ✅ Do not allow force pushes/deletions. `enforce_admins: false` (solo-dev: podés pushear directo, pero nada se mergea en rojo).
-- Release notes: `generate_release_notes` + 3-5 bullets humanos por versión (qué trae, en lenguaje de usuario). Cuando haya usuarios externos, el release sale en `draft` primero y se publica a mano tras probar el APK.
+- Release notes: formato fijo en 3 bloques + changelog auto. Tras publicar el workflow (solo trae `Full Changelog`), curar con `gh release edit vX.Y.Z --notes <archivo>`:
+  ```markdown
+  ## Qué trae (3-5 bullets, lenguaje de usuario)
+  ## Fixes (con #issue cuando aplique)
+  ## Detalles (tamaño APK, firma, CI)
+  **Full Changelog**: <link auto vA...vB>
+  ```
+  Desde v0.0.7 todas las releases llevan descripción curada (las ≤v0.0.5 salieron peladas). Cuando haya usuarios externos, el release sale en `draft` primero y se publica a mano tras probar el APK.
 
 ## Gates y deuda conocida
 - `scripts/audit-gates.sh`: debug APK **monitoreado** (sin gate duro en v1); gate `<40MB` duro sobre el APK release (`app-release-unsigned.apk` sin firmar, `app-release.apk` el día que se firme).
