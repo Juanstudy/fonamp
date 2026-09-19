@@ -95,7 +95,7 @@ import kotlinx.coroutines.flow.Flow
 fun FonampRoot(
     player: PlayerManager,
     themeFlow: Flow<com.fonamp.core.database.ThemePref?>,
-    version: String = "0.1.0",
+    version: String = BuildConfig.VERSION_NAME,
 ) {
     val themePref by themeFlow.collectAsStateWithLifecycle(initialValue = null)
     val darkTheme = when (themePref?.mode ?: ThemeMode.SYSTEM) {
