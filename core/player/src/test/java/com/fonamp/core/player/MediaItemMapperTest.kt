@@ -26,11 +26,12 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class MediaItemMapperTest {
 
-    private fun localShaped(id: String, artworkUri: String? = null): MediaItem {
+    private fun localShaped(id: String, artworkUri: String? = null, durationMs: Long? = null): MediaItem {
         val extras = Bundle().apply {
             putString("source_id", "local")
             putString("stable_id", id)
             putBoolean("is_live", false)
+            durationMs?.let { putLong("duration_ms", it) }
         }
         return MediaItem.Builder()
             .setMediaId("local:$id")
@@ -79,6 +80,7 @@ class MediaItemMapperTest {
         assertEquals("is_live", PlayerExtras.KEY_IS_LIVE)
         assertEquals("station_uuid", PlayerExtras.KEY_STATION_UUID)
         assertEquals("country", PlayerExtras.KEY_COUNTRY)
+        assertEquals("duration_ms", PlayerExtras.KEY_DURATION_MS)
     }
 
     @Test
@@ -92,6 +94,18 @@ class MediaItemMapperTest {
     }
 
     @Test
+    fun `local shaped item carries duration when present`() {
+        val media = localShaped("42", durationMs = 180_000L)
+        assertEquals(180_000L, media.durationMs())
+    }
+
+    @Test
+    fun `local shaped item has null duration when absent`() {
+        val media = localShaped("42")
+        assertNull(media.durationMs())
+    }
+
+    @Test
     fun `radio shaped item reads live with station uuid`() {
         val media = radioShaped("uuid-1")
         assertEquals("radio:uuid-1", media.mediaId)
@@ -100,6 +114,7 @@ class MediaItemMapperTest {
         assertEquals("uuid-1", media.stableId())
         assertEquals("uuid-1", media.stationUuid())
         assertEquals("Germany", media.country())
+        assertNull(media.durationMs())
     }
 
     @Test

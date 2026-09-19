@@ -7,4 +7,5 @@ object SourceExtras {
     const val KEY_IS_LIVE = "is_live"
     const val KEY_STATION_UUID = "station_uuid"
     const val KEY_COUNTRY = "country"
+    const val KEY_DURATION_MS = "duration_ms"
 }

@@ -49,6 +49,7 @@ import com.fonamp.core.permissions.CollectionEntryRoute
 import com.fonamp.core.permissions.NotificationGate
 import com.fonamp.core.player.PlayerError
 import com.fonamp.core.player.PlayerManager
+import com.fonamp.core.player.durationMs
 import com.fonamp.core.ui.FonampTheme
 import com.fonamp.core.ui.MiniPlayer
 import com.fonamp.core.ui.MiniPlayerState
@@ -240,6 +241,11 @@ fun FonampRoot(
                     },
                     errorMessage = playerState.error?.message,
                     onRetry = player::retry,
+                    positionMs = playerState.positionMs,
+                    durationMs = current?.durationMs(),
+                    onSeekTo = player::seekTo,
+                    onPrev = if (!playerState.isLive) player::prev else null,
+                    onNext = if (!playerState.isLive) player::next else null,
                 )
             }
         }

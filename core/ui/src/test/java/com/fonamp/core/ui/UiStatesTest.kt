@@ -277,6 +277,49 @@ class UiStatesTest {
         assert(retries == 1) { "expected one retry click, got $retries" }
     }
 
+    @Test
+    fun `player sheet shows progress slider and times when duration is provided`() {
+        var seekPosition = -1L
+        var prevClicked = false
+        var nextClicked = false
+        rule.setContent {
+            FonampTheme {
+                PlayerSheet(
+                    title = "My Local Song",
+                    subtitle = "My Artist",
+                    source = SourceBadgeKind.LOCAL,
+                    isPlaying = true,
+                    onTogglePlayPause = {},
+                    onClose = {},
+                    positionMs = 65_000L,
+                    durationMs = 185_000L,
+                    onSeekTo = { seekPosition = it },
+                    onPrev = { prevClicked = true },
+                    onNext = { nextClicked = true },
+                )
+            }
+        }
+
+        rule.onNodeWithTag("player-progress-section").assertExists()
+        rule.onNodeWithTag("player-slider").assertExists()
+        rule.onNodeWithText("1:05").assertExists()
+        rule.onNodeWithText("3:05").assertExists()
+
+        rule.onNodeWithTag("player-prev").performScrollTo().performClick()
+        assert(prevClicked) { "expected prev click" }
+
+        rule.onNodeWithTag("player-next").performScrollTo().performClick()
+        assert(nextClicked) { "expected next click" }
+    }
+
+    @Test
+    fun `formatDuration formats properly`() {
+        org.junit.Assert.assertEquals("0:00", formatDuration(0L))
+        org.junit.Assert.assertEquals("0:05", formatDuration(5_000L))
+        org.junit.Assert.assertEquals("1:05", formatDuration(65_000L))
+        org.junit.Assert.assertEquals("1:01:05", formatDuration(3_665_000L))
+    }
+
     // SourceBadge ---------------------------------------------------------------
 
     @Test

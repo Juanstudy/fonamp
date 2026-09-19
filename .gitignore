@@ -2,6 +2,7 @@
 .atl/
 .pi/
 .claude/
+.codegraph/
 
 # Android build outputs
 build/

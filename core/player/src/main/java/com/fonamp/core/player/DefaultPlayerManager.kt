@@ -12,10 +12,18 @@ import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -41,26 +49,59 @@ class DefaultPlayerManager @Inject constructor(
     private val _state = MutableStateFlow(PlayerUiState())
     override val state: StateFlow<PlayerUiState> = _state.asStateFlow()
 
+    private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
+    private var positionJob: Job? = null
+
     @Volatile
     private var controller: MediaController? = null
 
     private val pendingConnect: Boolean
         get() = controller == null
 
+    private fun startPositionTicker() {
+        positionJob?.cancel()
+        positionJob = scope.launch {
+            while (isActive) {
+                delay(500L)
+                val c = controller ?: break
+                if (!_state.value.isPlaying || _state.value.isLive) break
+                val pos = c.currentPosition.coerceAtLeast(0L)
+                _state.update { it.copy(positionMs = pos) }
+            }
+        }
+    }
+
+    private fun stopPositionTicker() {
+        positionJob?.cancel()
+        positionJob = null
+    }
+
     private val listener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            _state.update { it.copy(isPlaying = isPlaying) }
+            val currentPos = controller?.currentPosition?.coerceAtLeast(0L) ?: _state.value.positionMs
+            _state.update { it.copy(isPlaying = isPlaying, positionMs = currentPos) }
+            if (isPlaying && !_state.value.isLive) {
+                startPositionTicker()
+            } else {
+                stopPositionTicker()
+            }
         }
 
         override fun onMediaItemTransition(item: MediaItem?, reason: Int) {
             val c = controller ?: return
+            val isLive = item?.isLive() ?: false
             _state.update {
                 it.copy(
                     index = c.currentMediaItemIndex.coerceAtLeast(0),
-                    isLive = item?.isLive() ?: it.isLive,
+                    isLive = isLive,
                     icyTitle = null,
                     positionMs = 0L,
                 )
+            }
+            if (_state.value.isPlaying && !isLive) {
+                startPositionTicker()
+            } else {
+                stopPositionTicker()
             }
         }
 
@@ -132,6 +173,7 @@ class DefaultPlayerManager @Inject constructor(
     }
 
     override fun stop() {
+        stopPositionTicker()
         controller?.stop()
         _state.update { if (it.queue.isEmpty()) it else it.copy(isPlaying = false, icyTitle = null) }
     }
@@ -193,6 +235,8 @@ class DefaultPlayerManager @Inject constructor(
 
     /** Best-effort release; the service owns the real player lifetime. */
     fun release() {
+        stopPositionTicker()
+        scope.cancel()
         runCatching { controller?.removeListener(listener) }
         runCatching { controller?.release() }
         controller = null

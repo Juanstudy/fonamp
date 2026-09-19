@@ -250,6 +250,48 @@ object AppIcons {
             }
         }
     }
+
+    /**
+     * Copy of `Icons.Filled.SkipPrevious` (extended-only). Transport control
+     * for jumping to previous track in queue.
+     */
+    val SkipPrevious: ImageVector by lazy {
+        appMaterialIcon(name = "Filled.SkipPrevious") {
+            appMaterialPath {
+                moveTo(6.0f, 6.0f)
+                horizontalLineToRelative(2.0f)
+                verticalLineToRelative(12.0f)
+                lineTo(6.0f, 18.0f)
+                close()
+                moveTo(9.5f, 12.0f)
+                lineToRelative(8.5f, 6.0f)
+                lineTo(18.0f, 6.0f)
+                close()
+            }
+        }
+    }
+
+    /**
+     * Copy of `Icons.Filled.SkipNext` (extended-only). Transport control
+     * for jumping to next track in queue.
+     */
+    val SkipNext: ImageVector by lazy {
+        appMaterialIcon(name = "Filled.SkipNext") {
+            appMaterialPath {
+                moveTo(6.0f, 18.0f)
+                lineToRelative(8.5f, -6.0f)
+                lineTo(6.0f, 6.0f)
+                verticalLineToRelative(12.0f)
+                close()
+                moveTo(16.0f, 6.0f)
+                verticalLineToRelative(12.0f)
+                horizontalLineToRelative(2.0f)
+                lineTo(18.0f, 6.0f)
+                horizontalLineToRelative(-2.0f)
+                close()
+            }
+        }
+    }
 }
 
 /**

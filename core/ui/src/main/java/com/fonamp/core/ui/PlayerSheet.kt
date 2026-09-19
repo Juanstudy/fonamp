@@ -19,8 +19,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -49,6 +55,11 @@ fun PlayerSheet(
     onToggleFavorite: (() -> Unit)? = null,
     errorMessage: String? = null,
     onRetry: (() -> Unit)? = null,
+    positionMs: Long = 0L,
+    durationMs: Long? = null,
+    onSeekTo: ((Long) -> Unit)? = null,
+    onPrev: (() -> Unit)? = null,
+    onNext: (() -> Unit)? = null,
 ) {
     Column(
         modifier = modifier
@@ -132,13 +143,74 @@ fun PlayerSheet(
             }
         }
 
+        if (durationMs != null && durationMs > 0L) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("player-progress-section"),
+            ) {
+                var isDragging by remember { mutableStateOf(false) }
+                var dragPosition by remember { mutableFloatStateOf(0f) }
+
+                val currentPosition = if (isDragging) dragPosition else positionMs.toFloat().coerceIn(0f, durationMs.toFloat())
+
+                Slider(
+                    value = currentPosition,
+                    onValueChange = {
+                        isDragging = true
+                        dragPosition = it
+                    },
+                    onValueChangeFinished = {
+                        isDragging = false
+                        onSeekTo?.invoke(dragPosition.toLong())
+                    },
+                    valueRange = 0f..durationMs.toFloat(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("player-slider"),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = formatDuration(if (isDragging) dragPosition.toLong() else positionMs),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("player-current-time"),
+                    )
+                    Text(
+                        text = formatDuration(durationMs),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("player-total-duration"),
+                    )
+                }
+            }
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (onPrev != null) {
+                IconButton(
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .testTag("player-prev"),
+                    onClick = onPrev,
+                ) {
+                    Icon(
+                        imageVector = AppIcons.SkipPrevious,
+                        contentDescription = "Previous",
+                    )
+                }
+            }
             IconButton(
-                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                modifier = Modifier
+                    .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                    .testTag("player-play-pause"),
                 onClick = onTogglePlayPause,
             ) {
                 Icon(
@@ -146,9 +218,24 @@ fun PlayerSheet(
                     contentDescription = if (isPlaying) "Pause" else "Play",
                 )
             }
+            if (onNext != null) {
+                IconButton(
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .testTag("player-next"),
+                    onClick = onNext,
+                ) {
+                    Icon(
+                        imageVector = AppIcons.SkipNext,
+                        contentDescription = "Next",
+                    )
+                }
+            }
             if (onToggleFavorite != null) {
                 IconButton(
-                    modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .testTag("player-favorite"),
                     onClick = onToggleFavorite,
                 ) {
                     Icon(
@@ -162,5 +249,19 @@ fun PlayerSheet(
                 }
             }
         }
+    }
+}
+
+/** Formats milliseconds to mm:ss or hh:mm:ss. */
+internal fun formatDuration(millis: Long): String {
+    if (millis <= 0L) return "0:00"
+    val totalSeconds = millis / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        "%d:%02d:%02d".format(hours, minutes, seconds)
+    } else {
+        "%d:%02d".format(minutes, seconds)
     }
 }
