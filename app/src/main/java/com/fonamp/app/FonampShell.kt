@@ -244,8 +244,8 @@ fun FonampRoot(
                     positionMs = playerState.positionMs,
                     durationMs = current?.durationMs(),
                     onSeekTo = player::seekTo,
-                    onPrev = if (!playerState.isLive) player::prev else null,
-                    onNext = if (!playerState.isLive) player::next else null,
+                    onPrev = if (current != null && !playerState.isLive) player::prev else null,
+                    onNext = if (current != null && !playerState.isLive) player::next else null,
                 )
             }
         }

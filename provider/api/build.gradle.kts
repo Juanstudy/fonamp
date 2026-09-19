@@ -37,4 +37,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.coroutines.test)
+    // End-to-end mapper tests read the real items through core-player's
+    // durationMs(); test-only edge, main source set stays provider-pure.
+    testImplementation(project(":core:player"))
 }

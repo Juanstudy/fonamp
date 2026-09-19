@@ -47,3 +47,4 @@ fun MediaItem.country(): String? =
 /** Track duration in milliseconds; null for radio or when undisclosed. */
 fun MediaItem.durationMs(): Long? =
     mediaMetadata.extras?.takeIf { it.containsKey(PlayerExtras.KEY_DURATION_MS) }?.getLong(PlayerExtras.KEY_DURATION_MS)
+        ?: mediaMetadata.durationMs

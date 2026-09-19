@@ -1,8 +1,10 @@
 package com.fonamp.provider.api
 
+import com.fonamp.core.player.durationMs
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -103,5 +105,31 @@ class MediaItemMappingTest {
         val local: Source = FakeLocalSource()
         assertTrue((local.browse(BrowseQuery()) as SourceResult.Ok).v.isEmpty())
         assertTrue((local.search("x") as SourceResult.Ok).v.isEmpty())
+    }
+
+    @Test
+    fun `localMediaItem with duration reads value through durationMs`() {
+        val item = AudioItem(
+            sourceId = "local",
+            stableId = "42",
+            title = "Song",
+            subtitle = "Artist",
+            album = "Album",
+            durationMs = 180_000L,
+            streamUri = "content://media/external/audio/media/42",
+        )
+        assertEquals(180_000L, localMediaItem(item).durationMs())
+    }
+
+    @Test
+    fun `localMediaItem with null duration reads null through durationMs`() {
+        val item = AudioItem(
+            sourceId = "local",
+            stableId = "43",
+            title = "Unknown length",
+            streamUri = "content://media/external/audio/media/43",
+            durationMs = null,
+        )
+        assertNull(localMediaItem(item).durationMs())
     }
 }
