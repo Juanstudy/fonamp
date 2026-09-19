@@ -15,21 +15,15 @@
 **fonamp** is a lightweight native Android music player: your on-device library (MediaStore) and internet radio (RadioBrowser) in one fast, tiny app — with curated Lofi/Chill/Ambient tiles for instant listening. No ads, no trackers, no Firebase.
 
 > [!NOTE]
-> fonamp is in internal testing (v0.0.5). Releases ship a signed APK for direct install — not via Play Store yet. See [CHANGELOG.md](./CHANGELOG.md) for what each version brings.
+> fonamp is in internal testing (v0.0.7). Releases ship a signed APK for direct install — not via Play Store yet. See [CHANGELOG.md](./CHANGELOG.md) for what each version brings.
 
 ## Screenshots
 
-<!-- Screenshot slots: drop phone screenshots here when available, one line each.
-     Keep the same width so the wall stays even on mobile.
-     Library screen:
-     <img src="./assets/readme/screen-library.png" width="270" alt="Library screen: songs, albums, and artists from the on-device collection">
-     Now-Playing sheet:
-     <img src="./assets/readme/screen-now-playing.png" width="270" alt="Now-Playing sheet with artwork, queue, and playback controls">
-     Radio / Discover section:
-     <img src="./assets/readme/screen-discover.png" width="270" alt="Discover section with RadioBrowser stations and curated Lofi, Chill, and Ambient tiles">
--->
+<p align="center">
+  <img src="./assets/readme/screenshot.jpeg" width="360" alt="fonamp on a real device: Discover radio, Library songs, and the Now-Playing sheet with progress slider and transport controls">
+</p>
 
-*Screenshots coming soon — Library, Now-Playing, and Discover will appear here.*
+*Real device capture (v0.0.7): Discover radio, Library, and Now-Playing with the new progress slider.*
 
 ## Why fonamp
 
