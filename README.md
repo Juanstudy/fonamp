@@ -4,6 +4,8 @@
   <img src="./assets/readme/hero.png" width="100%" alt="fonamp — local library plus internet radio in one fast, tiny, tracker-free Android player">
 </p>
 
+<h1 align="center">fonamp</h1>
+
 <p align="center">
   <a href="https://github.com/Juanstudy/fonamp/actions/workflows/android.yml"><img src="https://img.shields.io/github/actions/workflow/status/Juanstudy/fonamp/android.yml?label=build" alt="CI build status"></a>
   <a href="https://github.com/Juanstudy/fonamp/releases"><img src="https://img.shields.io/github/v/release/Juanstudy/fonamp?label=release" alt="Latest release"></a>
