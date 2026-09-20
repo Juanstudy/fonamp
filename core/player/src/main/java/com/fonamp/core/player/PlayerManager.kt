@@ -13,8 +13,9 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * Per-source model (player Req 3): radio is play/stop ([togglePlayPause] on a
  * playing live item stops, keeping the live edge honest; [seekTo] is a no-op
- * when live), local is pause/resume plus [next]/[prev]/[seekTo]. No
- * shuffle/repeat/speed/sleep in v1.
+ * when live), local is pause/resume plus [next]/[prev]/[seekTo], plus an
+ * optional sleep timer ([setSleepTimer]) for both. No shuffle/repeat/speed
+ * in v1.
  */
 interface PlayerManager {
     /** Render state for the mini-player and sheet. */
@@ -46,4 +47,14 @@ interface PlayerManager {
 
     /** Clear the banner and re-attempt the current queue/index. */
     fun retry()
+
+    /**
+     * Arm a sleep timer that halts playback [durationMs] from now (one-shot,
+     * keeps the queue, never auto-resumes). Replaces any active timer.
+     * Starting fresh playback ([play]) or a manual [stop] clears it.
+     */
+    fun setSleepTimer(durationMs: Long)
+
+    /** Cancel any active sleep timer; no-op when none. */
+    fun clearSleepTimer()
 }
