@@ -256,6 +256,9 @@ fun FonampRoot(
                     onSeekTo = player::seekTo,
                     onPrev = if (current != null && !playerState.isLive) player::prev else null,
                     onNext = if (current != null && !playerState.isLive) player::next else null,
+                    sleepEndsAtMs = playerState.sleepEndsAtMs,
+                    onSetSleepTimer = player::setSleepTimer,
+                    onClearSleepTimer = player::clearSleepTimer,
                 )
             }
         }
