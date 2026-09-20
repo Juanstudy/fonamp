@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -21,23 +22,29 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 
 /**
  * Slice C: modal player sheet skeleton (design §7).
  *
  * Title, artist-or-station, [SourceBadge], ICY line for radio, queue/seek
  * slots for local (owned by later slices), favorite toggle (radio), error
- * banner + retry on failure. No shuffle/repeat/speed/sleep affordances in v1.
+ * banner + retry on failure, optional sleep timer (presets + remaining).
+ * No shuffle/repeat/speed affordances.
  */
 @Composable
 fun PlayerSheet(
@@ -60,7 +67,29 @@ fun PlayerSheet(
     onSeekTo: ((Long) -> Unit)? = null,
     onPrev: (() -> Unit)? = null,
     onNext: (() -> Unit)? = null,
+    /**
+     * Monotonic sleep-timer deadline (`SystemClock.elapsedRealtime` base),
+     * null when no timer is armed. Shown only when [onSetSleepTimer] is set.
+     */
+    sleepEndsAtMs: Long? = null,
+    /** Non-null wires the sleep-timer button + dialog. */
+    onSetSleepTimer: ((Long) -> Unit)? = null,
+    onClearSleepTimer: (() -> Unit)? = null,
+    /** Clock for the remaining-time text; injectable for deterministic tests. */
+    nowMs: () -> Long = android.os.SystemClock::elapsedRealtime,
 ) {
+    var showSleepDialog by remember { mutableStateOf(false) }
+    // Minute-fresh remaining text while a timer is armed (radio has no
+    // position ticker driving recomposition, so tick locally).
+    var nowSnapshot by remember { mutableLongStateOf(nowMs()) }
+    LaunchedEffect(sleepEndsAtMs) {
+        if (sleepEndsAtMs == null) return@LaunchedEffect
+        while (true) {
+            delay(30_000L)
+            nowSnapshot = nowMs()
+        }
+    }
+    val sleepRemainingMs = sleepEndsAtMs?.let { (it - nowSnapshot).coerceAtLeast(0L) }
     Column(
         modifier = modifier
             .testTag("player-sheet")
@@ -197,6 +226,17 @@ fun PlayerSheet(
             }
         }
 
+        if (sleepEndsAtMs != null && sleepRemainingMs != null && onSetSleepTimer != null) {
+            Text(
+                text = formatSleepRemaining(sleepRemainingMs),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("sleep-remaining"),
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -239,6 +279,19 @@ fun PlayerSheet(
                     )
                 }
             }
+            if (onSetSleepTimer != null) {
+                IconButton(
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .testTag("player-sleep"),
+                    onClick = { showSleepDialog = true },
+                ) {
+                    Icon(
+                        imageVector = AppIcons.Bedtime,
+                        contentDescription = "Sleep timer",
+                    )
+                }
+            }
             if (onToggleFavorite != null) {
                 IconButton(
                     modifier = Modifier
@@ -257,7 +310,82 @@ fun PlayerSheet(
                 }
             }
         }
+        if (showSleepDialog && onSetSleepTimer != null) {
+            SleepTimerDialog(
+                activeEndsAtMs = sleepEndsAtMs,
+                nowMs = nowMs,
+                onPick = {
+                    onSetSleepTimer.invoke(it)
+                    showSleepDialog = false
+                },
+                onClear = {
+                    onClearSleepTimer?.invoke()
+                    showSleepDialog = false
+                },
+                onDismiss = { showSleepDialog = false },
+            )
+        }
     }
+}
+
+/** Sleep-timer presets in minutes. */
+val SLEEP_PRESET_MINUTES = listOf(5, 10, 15, 30, 45, 60)
+
+/**
+ * Preset picker + off switch. Stateless: the sheet owns visibility,
+ * the player owns the deadline.
+ */
+@Composable
+private fun SleepTimerDialog(
+    activeEndsAtMs: Long?,
+    nowMs: () -> Long,
+    onPick: (Long) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val activeMinutes = activeEndsAtMs?.let {
+        ((it - nowMs()).coerceAtLeast(0L) + 59_999L) / 60_000L
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        modifier = Modifier.testTag("sleep-dialog"),
+        title = { Text("Sleep timer") },
+        text = {
+            Column {
+                SLEEP_PRESET_MINUTES.forEach { minutes ->
+                    val isActive = activeMinutes == minutes.toLong()
+                    TextButton(
+                        onClick = { onPick(minutes * 60_000L) },
+                        modifier = Modifier.testTag("sleep-preset-$minutes"),
+                    ) {
+                        Text(
+                            text = if (isActive) "$minutes min (on)" else "$minutes min",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+                if (activeEndsAtMs != null) {
+                    TextButton(
+                        onClick = onClear,
+                        modifier = Modifier.testTag("sleep-off"),
+                    ) {
+                        Text(
+                            text = "Off",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        },
+    )
+}
+
+/** "Stops in 29 min", ceiling minutes so 29:01 reads 30, sub-minute reads less than 1. */
+private fun formatSleepRemaining(remainingMs: Long): String {
+    val minutes = (remainingMs + 59_999L) / 60_000L
+    return if (minutes < 1L) "Stops in less than 1 min" else "Stops in $minutes min"
 }
 
 /** Formats milliseconds to mm:ss or hh:mm:ss. */
