@@ -3,6 +3,18 @@
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Changed / Fixed` por versión. Cada release de GitHub lleva además 3-5 bullets en lenguaje de usuario.
 
 ## [Unreleased]
+### Added
+- Screenshot real del dispositivo con controles del reproductor en el README.
+### Fixed
+- Versión en About leída desde BuildConfig en vez de `0.1.0` hardcodeado.
+
+## [0.0.7] — 2026-09-19
+### Added
+- Controles completos en PlayerSheet: slider de progreso con tiempos transcurrido/total y botones anterior/siguiente (cierra #5).
+### Fixed
+- Reproducción offline de archivos locales que fallaba al instante (cierra #3).
+- CI roto por el paquete `tools` eliminado por Google (setup-android v3 → v4).
+- 7 pulidos del review del reproductor: slider en fracción 0..1, seek con clamp, prev/next ocultos sin cola, duration fallback y sheet gating.
 
 ## [0.0.6] — 2026-09-18
 ### Added
