@@ -3,10 +3,13 @@
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Changed / Fixed` por versión. Cada release de GitHub lleva además 3-5 bullets en lenguaje de usuario.
 
 ## [Unreleased]
+
+## [0.0.8] — 2026-09-20
 ### Added
-- Screenshot real del dispositivo con controles del reproductor en el README.
 - Búsqueda de emisoras por nombre integrada al filtro de Discover: debounce con consulta `byname` al directorio, sección de resultados con play + favorito idénticos, estados vacía/error con retry.
+- Screenshot real del dispositivo con controles del reproductor en el README.
 ### Fixed
+- La X del mini-reproductor ahora lo cierra sin limpiar la cola (cierra #8).
 - Versión en About leída desde BuildConfig en vez de `0.1.0` hardcodeado.
 
 ## [0.0.7] — 2026-09-19
