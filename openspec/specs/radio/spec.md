@@ -70,13 +70,13 @@ The system MUST cache the directory index for 24 hours, serve the cached index w
 
 ### Requirement 6: Directory scope exclusions
 
-The system MUST NOT provide tops, random, or name-search directory browsing in v1 beyond the country/genre/tag index, filter, and station lists defined above.
+The system MUST NOT provide tops or random directory browsing beyond the country/genre/tag index, filter, station lists, and name search defined here.
 
 #### Scenario: No excluded entry points
 
 - GIVEN the Radio tab in all its states
 - WHEN navigation and actions are inspected
-- THEN no tops, random-play, or station-name-search control exists.
+- THEN no tops or random-play control exists.
 
 ### Requirement 7: Presets curados mapeados a AudioItem
 
@@ -178,4 +178,32 @@ The system MUST resolve the exact tile tag list and the omarchy inclusion exclus
 
 - GIVEN the Radio tab in all its states after this change
 - WHEN navigation and actions are inspected
-- THEN no station-name-search control exists (Requirement 6 intact); `byname/omarchy` was used only as apply-time curl verification, not wired into the app.
+- THEN no separate station-name-search screen exists (Requirement 13 wires search into the existing filter field instead); `byname/omarchy` was used only as apply-time curl verification, not wired into the app.
+
+### Requirement 13: Server-side name search integrated in the Discover filter
+
+The system MUST offer directory name search wired into the existing Discover filter field (`RadioViewModel.setQuery`): typing at least 2 characters fires a debounced (~400ms) `byname` query reusing mirror fallback, 10s timeout, and typed errors; a blank/short query performs zero network; hits render as a "Search results" section below the index with the same one-tap play and one-tap heart as normal station rows; an empty result renders a designed Empty state; a failed search renders retry without clearing the index; navigating away cancels any pending search.
+
+#### Scenario: Debounced search with local filter intact
+
+- GIVEN the Discover screen with a loaded index
+- WHEN the user types "lofi" in the filter field
+- THEN the index narrows locally with zero source calls per keystroke AND, after the debounce, one `byname` directory call fires and its hits appear in the "Search results" section.
+
+#### Scenario: Short query costs zero network
+
+- GIVEN the Discover screen
+- WHEN the query is blank or a single character
+- THEN no directory call is made and no search section is shown.
+
+#### Scenario: Play + heart parity
+
+- GIVEN rendered search results
+- WHEN a result row is tapped and its heart is toggled
+- THEN audio starts with the mini-player raised and the station persists as a favorite with the same undo-snackbar behavior as Requirement 4.
+
+#### Scenario: Failure keeps the index
+
+- GIVEN a directory search that fails (offline/timeout/server)
+- WHEN the failure surfaces
+- THEN the index stays visible and the search section shows retry; tapping retry re-fires only the search.
