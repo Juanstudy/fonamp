@@ -1,5 +1,6 @@
 package com.fonamp.core.player
 
+import android.os.SystemClock
 import androidx.media3.common.MediaItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -91,7 +92,7 @@ class FakePlayerManager : PlayerManager {
     override fun stop() {
         _state.update { current ->
             if (current.queue.isEmpty()) current
-            else current.copy(isPlaying = false, icyTitle = null)
+            else current.copy(isPlaying = false, icyTitle = null, sleepEndsAtMs = null)
         }
     }
 
@@ -144,5 +145,16 @@ class FakePlayerManager : PlayerManager {
         } else {
             current.copy(isPlaying = true, error = null)
         }
+    }
+
+    override fun setSleepTimer(durationMs: Long) {
+        require(durationMs > 0L) { "Sleep timer duration must be positive, was=$durationMs" }
+        _state.update { current ->
+            current.copy(sleepEndsAtMs = SystemClock.elapsedRealtime() + durationMs)
+        }
+    }
+
+    override fun clearSleepTimer() {
+        _state.update { current -> current.copy(sleepEndsAtMs = null) }
     }
 }

@@ -6,8 +6,9 @@ import androidx.media3.common.MediaItem
  * Everything the mini-player and sheet render (player Req 5).
  *
  * `positionMs` is the last seek/current anchor for the local seek bar; it is
- * always 0 for live radio (no seek bar). v1 explicitly has no
- * shuffle/repeat/speed/sleep state.
+ * always 0 for live radio (no seek bar). `sleepEndsAtMs` is the monotonic
+ * ([SystemClock.elapsedRealtime]) sleep-timer deadline, null when no timer is
+ * armed. v1 has no shuffle/repeat/speed state.
  */
 data class PlayerUiState(
     val queue: List<MediaItem> = emptyList(),
@@ -17,4 +18,5 @@ data class PlayerUiState(
     val icyTitle: String? = null,
     val error: PlayerError? = null,
     val positionMs: Long = 0L,
+    val sleepEndsAtMs: Long? = null,
 )

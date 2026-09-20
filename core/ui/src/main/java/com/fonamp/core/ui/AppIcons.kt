@@ -292,6 +292,24 @@ object AppIcons {
             }
         }
     }
+
+    /**
+     * Copy of `Icons.Filled.Bedtime` (extended-only). Sleep-timer affordance;
+     * core has no clock/moon glyph, so copied, not replaced. Path is the
+     * official baseline 24px verbatim (Apache-2.0, material-icons repo).
+     */
+    val Bedtime: ImageVector by lazy {
+        appMaterialIcon(name = "Filled.Bedtime") {
+            appMaterialPath {
+                moveTo(12.34f, 2.02f)
+                curveTo(6.59f, 1.82f, 2.0f, 6.42f, 2.0f, 12.0f)
+                curveToRelative(0.0f, 5.52f, 4.48f, 10.0f, 10.0f, 10.0f)
+                curveToRelative(3.71f, 0.0f, 6.93f, -2.02f, 8.66f, -5.02f)
+                curveToRelative(-7.51f, -0.25f, -12.09f, -8.43f, -8.32f, -14.96f)
+                close()
+            }
+        }
+    }
 }
 
 /**

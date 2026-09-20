@@ -327,6 +327,82 @@ class UiStatesTest {
         org.junit.Assert.assertEquals(138_750L, lastSeek)
     }
 
+    // PlayerSheet sleep timer -------------------------------------------------
+
+    private fun sleepSheet(
+        sleepEndsAtMs: Long? = null,
+        nowMs: () -> Long = { 1_000_000L },
+        onPick: (Long) -> Unit = {},
+        onClear: () -> Unit = {},
+    ) {
+        rule.setContent {
+            FonampTheme {
+                PlayerSheet(
+                    title = "Night Wave",
+                    subtitle = null,
+                    source = SourceBadgeKind.RADIO,
+                    isPlaying = true,
+                    onTogglePlayPause = {},
+                    onClose = {},
+                    sleepEndsAtMs = sleepEndsAtMs,
+                    onSetSleepTimer = onPick,
+                    onClearSleepTimer = onClear,
+                    nowMs = nowMs,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `sleep button opens dialog with presets`() {
+        sleepSheet()
+        rule.onNodeWithTag("player-sleep").performScrollTo().performClick()
+        rule.onNodeWithTag("sleep-dialog").assertExists()
+        rule.onNodeWithText("Sleep timer").assertExists()
+        rule.onNodeWithTag("sleep-preset-15").assertExists()
+    }
+
+    @Test
+    fun `preset pick calls back with minutes and closes`() {
+        val picks = mutableListOf<Long>()
+        sleepSheet(onPick = { picks += it })
+        rule.onNodeWithTag("player-sleep").performScrollTo().performClick()
+        rule.onNodeWithTag("sleep-preset-30").performClick()
+        org.junit.Assert.assertEquals(listOf(30 * 60_000L), picks)
+        rule.onNodeWithTag("sleep-dialog").assertDoesNotExist()
+    }
+
+    @Test
+    fun `active timer shows remaining and off clears`() {
+        var cleared = 0
+        sleepSheet(
+            sleepEndsAtMs = 1_000_000L + 29 * 60_000L,
+            onClear = { cleared++ },
+        )
+        rule.onNodeWithText("Stops in 29 min").assertExists()
+        rule.onNodeWithTag("player-sleep").performScrollTo().performClick()
+        rule.onNodeWithText("Off").performClick()
+        org.junit.Assert.assertEquals(1, cleared)
+        rule.onNodeWithTag("sleep-dialog").assertDoesNotExist()
+    }
+
+    @Test
+    fun `no sleep callbacks means no sleep affordance`() {
+        rule.setContent {
+            FonampTheme {
+                PlayerSheet(
+                    title = "Night Wave",
+                    subtitle = null,
+                    source = SourceBadgeKind.RADIO,
+                    isPlaying = true,
+                    onTogglePlayPause = {},
+                    onClose = {},
+                )
+            }
+        }
+        rule.onNodeWithTag("player-sleep").assertDoesNotExist()
+    }
+
     @Test
     fun `formatDuration formats properly`() {
         org.junit.Assert.assertEquals("0:00", formatDuration(0L))

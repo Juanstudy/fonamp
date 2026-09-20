@@ -50,7 +50,7 @@ The system MUST show exactly the bottom tabs Collection, Radio, Favorites, and S
 
 - GIVEN the app launched to any tab
 - WHEN the bottom bar is inspected
-- THEN it contains Collection, Radio, Favorites, Settings and no Podcasts, Downloads, EQ, or sleep-timer entry points.
+- THEN it contains Collection, Radio, Favorites, Settings and no Podcasts, Downloads, or EQ entry points (the sleep timer lives inside the player sheet, not as a tab).
 
 #### Scenario: Mini-player persistence
 

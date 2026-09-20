@@ -3,6 +3,8 @@
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Changed / Fixed` por versión. Cada release de GitHub lleva además 3-5 bullets en lenguaje de usuario.
 
 ## [Unreleased]
+### Added
+- Sleep timer en la sheet: presets 5/10/15/30/45/60 min + Off, detiene la reproducción una vez sin permiso nuevo.
 
 ## [0.0.8] — 2026-09-20
 ### Added

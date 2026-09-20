@@ -307,4 +307,26 @@ class PlayerManagerTest {
         assertEquals(10_000, PlaybackService.CONNECT_TIMEOUT_MS)
         assertEquals(10_000, PlaybackService.READ_TIMEOUT_MS)
     }
+
+    @Test
+    fun `sleep timer arms clears and dies with stop and play`() = runTest {
+        val manager = FakePlayerManager()
+        manager.state.test {
+            awaitItem()
+            manager.play(listOf(localItem("1")), 0)
+            awaitItem()
+            manager.setSleepTimer(15 * 60_000L)
+            val armed = awaitItem()
+            assertTrue((armed.sleepEndsAtMs ?: 0L) > 0L)
+            manager.clearSleepTimer()
+            assertNull(awaitItem().sleepEndsAtMs)
+            manager.setSleepTimer(15 * 60_000L)
+            awaitItem()
+            manager.stop()
+            assertNull(awaitItem().sleepEndsAtMs)
+            manager.play(listOf(localItem("1")), 0)
+            assertNull(awaitItem().sleepEndsAtMs)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }

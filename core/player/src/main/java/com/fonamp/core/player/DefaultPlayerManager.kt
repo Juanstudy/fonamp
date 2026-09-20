@@ -52,6 +52,14 @@ class DefaultPlayerManager @Inject constructor(
     private val scope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
     private var positionJob: Job? = null
 
+    /**
+     * Sleep timer countdown on the manager's own scope: the foreground
+     * service keeps this process alive while audio plays, so no alarm,
+     * permission, or receiver is needed. Expiry funnels through [stop],
+     * which also clears the timer state.
+     */
+    private val sleepTimer = SleepTimer(scope, onExpire = { stop() })
+
     @Volatile
     private var controller: MediaController? = null
 
@@ -133,6 +141,9 @@ class DefaultPlayerManager @Inject constructor(
 
     override fun play(items: List<MediaItem>, index: Int) {
         if (items.isEmpty()) return
+        // Fresh playback context: a timer armed for something else must not
+        // fire into the new queue.
+        sleepTimer.clear()
         val safeIndex = index.coerceIn(items.indices)
         _state.value = PlayerUiState(
             queue = items,
@@ -174,8 +185,12 @@ class DefaultPlayerManager @Inject constructor(
 
     override fun stop() {
         stopPositionTicker()
+        sleepTimer.clear()
         controller?.stop()
-        _state.update { if (it.queue.isEmpty()) it else it.copy(isPlaying = false, icyTitle = null) }
+        _state.update {
+            if (it.queue.isEmpty()) it
+            else it.copy(isPlaying = false, icyTitle = null, sleepEndsAtMs = null)
+        }
     }
 
     override fun next() {
@@ -233,9 +248,20 @@ class DefaultPlayerManager @Inject constructor(
         } ?: connect()
     }
 
+    override fun setSleepTimer(durationMs: Long) {
+        sleepTimer.set(durationMs)
+        _state.update { it.copy(sleepEndsAtMs = sleepTimer.endsAtMs.value) }
+    }
+
+    override fun clearSleepTimer() {
+        sleepTimer.clear()
+        _state.update { it.copy(sleepEndsAtMs = null) }
+    }
+
     /** Best-effort release; the service owns the real player lifetime. */
     fun release() {
         stopPositionTicker()
+        sleepTimer.clear()
         scope.cancel()
         runCatching { controller?.removeListener(listener) }
         runCatching { controller?.release() }

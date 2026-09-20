@@ -38,10 +38,10 @@ The system MUST display the app version, open-source licenses, and source refere
 
 ### Requirement 4: No advanced customization in v1
 
-The system MUST NOT expose tab order or visibility editing, parametric EQ or presets, sleep timer, or playback speed controls anywhere in v1.
+The system MUST NOT expose tab order or visibility editing, parametric EQ or presets, or playback speed controls anywhere in v1. (The sleep timer lives in the player sheet, not in Settings.)
 
 #### Scenario: No v2 surfaces
 
 - GIVEN the Settings tab and player sheet
 - WHEN all actions and controls are inspected
-- THEN no tab editor, EQ, sleep timer, or speed control exists.
+- THEN no tab editor, EQ, or speed control exists in Settings or the player sheet.
