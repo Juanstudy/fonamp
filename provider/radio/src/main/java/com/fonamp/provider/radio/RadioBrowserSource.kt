@@ -28,8 +28,9 @@ import kotlinx.coroutines.launch
  *   24h [DirectoryCache]; fresh cache serves with zero network, stale/missing
  *   triggers fetch, failed refresh keeps stale and returns typed `Fail`.
  * - `browse(filtered)` → station list for one country/genre/tag selection.
- * - `search(q)` → client-side filter over cached station lists only (radio
- *   Req 6: no directory name-search); zero network, empty cache → `Ok(empty)`.
+ * - `search(q)` → server-side name search via `byname` (name-search delta);
+ *   blank is `Ok(empty)` with zero network, transport failures are typed
+ *   `Fail` so the UI can show retry/offline.
  * - Click-count (`POST json/url/{uuid}`) fires from [streamOf] via
  *   `scope.launch + runCatching` — swallowed, never blocks or fails playback.
  *
@@ -72,12 +73,13 @@ class RadioBrowserSource(
 
     override suspend fun search(q: String): SourceResult<List<AudioItem>> {
         if (q.isBlank()) return SourceResult.Ok(emptyList())
-        val needle = q.trim()
-        return SourceResult.Ok(
-            cache.allStations()
-                .filter { it.matches(needle) }
-                .map { it.toAudioItem() },
-        )
+        return try {
+            SourceResult.Ok(client.searchStations(q).map { it.toAudioItem() })
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            SourceResult.Fail(mapError(e))
+        }
     }
 
     override fun streamOf(item: AudioItem): MediaItem {
@@ -120,12 +122,6 @@ class RadioBrowserSource(
 
 private fun BrowseQuery.isIndex(): Boolean =
     country == null && genre == null && tag == null
-
-private fun StationDto.matches(needle: String): Boolean =
-    name.contains(needle, ignoreCase = true) ||
-        (country?.contains(needle, ignoreCase = true) == true) ||
-        tagList.any { it.contains(needle, ignoreCase = true) } ||
-        (codec?.contains(needle, ignoreCase = true) == true)
 
 private fun StationDto.toAudioItem(): AudioItem {
     val subtitle = (listOfNotNull(country) + tagList)

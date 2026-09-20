@@ -5,8 +5,9 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 /**
- * v1 directory surface only (radio Req 6): country/tag index, stations
- * by country or tag/genre, click-count. No tops/random/name-search.
+ * Directory surface (radio Req 6 as amended by the name-search delta):
+ * country/tag index, stations by country or tag/genre, stations by name,
+ * click-count. No tops/random.
  *
  * Genres resolve through the tags endpoint — the directory exposes no
  * separate genre listing, so genre selections query `stations/bytag`.
@@ -24,6 +25,9 @@ interface RadioBrowserApi {
 
     @GET("json/stations/bytag/{tag}")
     suspend fun stationsByTag(@Path("tag") tag: String): List<StationDto>
+
+    @GET("json/stations/byname/{name}")
+    suspend fun stationsByName(@Path("name") name: String): List<StationDto>
 
     @POST("json/url/{uuid}")
     suspend fun click(@Path("uuid") stationUuid: String): ClickResultDto

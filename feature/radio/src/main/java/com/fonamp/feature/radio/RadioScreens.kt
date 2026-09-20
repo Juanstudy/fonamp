@@ -56,9 +56,10 @@ import com.fonamp.provider.api.BrowseQuery
  *
  * Stateless screens driven by [RadioUiState]/[FavoritesUiState]; stateful
  * `*Route` entries at the bottom bind the VMs for Slice I navigation.
- * Generic M3 icons only (artwork deferred to v2); no tops, random, or
- * name-search controls exist on any surface in v1 (radio Req 6) — the text
- * field filters the loaded index locally (RAD-1).
+ * Generic M3 icons only (artwork deferred to v2); no tops or random controls
+ * exist on any surface (radio Req 6) — the text field filters the loaded
+ * index locally (RAD-1) and drives the debounced server-side name search
+ * rendered as the "Search results" section below the index.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +72,7 @@ fun DiscoverScreen(
     modifier: Modifier = Modifier,
     onPlay: (AudioItem) -> Unit = {},
     onToggleFavorite: (AudioItem) -> Unit = {},
+    onRetrySearch: () -> Unit = {},
 ) {
     // Single scrolling container (Req 9): the Curadas section sits on top of
     // the filter/tabs/index rows, so small screens scroll instead of squeezing
@@ -163,6 +165,81 @@ fun DiscoverScreen(
                     }
                 }
             }
+            if (state.query.trim().length >= RadioViewModel.SEARCH_MIN_CHARS) {
+                item(key = "search-header") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .testTag("search-section"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Search results",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        SourceBadge(kind = SourceBadgeKind.RADIO)
+                    }
+                }
+                when {
+                    state.remoteResults.isNotEmpty() -> items(
+                        state.remoteResults,
+                        key = { "search:${it.stableId}" },
+                    ) { station ->
+                        val uuid = station.stationUuid
+                        val isFavorite = uuid != null && state.favorites.contains(uuid)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onPlay(station) }
+                                .testTag("search-play-${uuid ?: station.stableId}")
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Icon(AppIcons.Radio, contentDescription = null)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(text = station.title, style = MaterialTheme.typography.bodyLarge)
+                                stationMeta(station)?.let {
+                                    Text(
+                                        text = it,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            if (uuid != null) {
+                                IconButton(
+                                    onClick = { onToggleFavorite(station) },
+                                    modifier = Modifier.testTag("search-fav-$uuid"),
+                                ) {
+                                    Icon(
+                                        if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                        contentDescription = if (isFavorite) "Unfavorite" else "Favorite",
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    state.remoteSearching -> item(key = "search-loading") {
+                        LoadingState(rowCount = 3)
+                    }
+                    state.remoteOffline -> item(key = "search-offline") {
+                        ErrorRetryState(
+                            message = "Search failed",
+                            onRetry = onRetrySearch,
+                        )
+                    }
+                    else -> item(key = "search-empty") {
+                        EmptyState(
+                            message = "No stations found",
+                            hint = "Try another name",
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -171,7 +248,7 @@ fun DiscoverScreen(
  * Change `curated-radio-stations` (Req 9, 11, D2): "Curadas" section on top of
  * Discover — pinned tag tiles (existing `browse(BrowseQuery(tag = …))` path,
  * 24h cache + mirror fallback) plus curated preset rows reusing the same row
- * play + heart testTags as [StationsScreen]. No name-search control (Req 12).
+ * play + heart testTags as [StationsScreen].
  */
 @Composable
 fun CuratedSection(
@@ -428,6 +505,7 @@ fun RadioRouteScreen(
     onToggleFavorite: (AudioItem) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    onRetrySearch: () -> Unit = {},
 ) {
     when (state) {
         RadioUiState.Loading -> LoadingState(modifier = modifier)
@@ -445,6 +523,7 @@ fun RadioRouteScreen(
             modifier = modifier,
             onPlay = onPlay,
             onToggleFavorite = onToggleFavorite,
+            onRetrySearch = onRetrySearch,
         )
         is RadioUiState.Stations -> StationsScreen(
             state = state,
@@ -477,6 +556,7 @@ fun DiscoverRoute(viewModel: RadioViewModel, modifier: Modifier = Modifier) {
         onPlay = viewModel::playStation,
         onToggleFavorite = viewModel::toggleFavorite,
         onRefresh = viewModel::refresh,
+        onRetrySearch = viewModel::retrySearch,
         modifier = modifier,
     )
 }

@@ -5,6 +5,7 @@ Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Ch
 ## [Unreleased]
 ### Added
 - Screenshot real del dispositivo con controles del reproductor en el README.
+- Búsqueda de emisoras por nombre integrada al filtro de Discover: debounce con consulta `byname` al directorio, sección de resultados con play + favorito idénticos, estados vacía/error con retry.
 ### Fixed
 - Versión en About leída desde BuildConfig en vez de `0.1.0` hardcodeado.
 
