@@ -109,6 +109,13 @@ fun FonampRoot(
         val playerState by player.state.collectAsStateWithLifecycle()
         val snackbar = remember { SnackbarHostState() }
         var showSheet by rememberSaveable { mutableStateOf(false) }
+        var miniDismissed by rememberSaveable { mutableStateOf(false) }
+
+        // UI-only dismiss: X hides the mini-player where it is.
+        // Reset when new playback starts so the next track shows again.
+        LaunchedEffect(playerState.queue, playerState.index, playerState.isPlaying) {
+            if (playerState.isPlaying) miniDismissed = false
+        }
 
         // Notification gate: lazy on first playback, failure tolerated.
         RequestNotificationOnce(playerHasQueue = playerState.queue.isNotEmpty())
@@ -117,7 +124,7 @@ fun FonampRoot(
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 Column {
-                    if (playerState.queue.isNotEmpty()) {
+                    if (playerState.queue.isNotEmpty() && !miniDismissed) {
                         val current = playerState.queue.getOrNull(playerState.index)
                         MiniPlayer(
                             state = MiniPlayerState(
@@ -133,7 +140,10 @@ fun FonampRoot(
                                 },
                             ),
                             onTogglePlayPause = player::togglePlayPause,
-                            onClose = player::stop,
+                            onClose = {
+                                player.stop()
+                                miniDismissed = true
+                            },
                             onExpand = { showSheet = true },
                         )
                     }
