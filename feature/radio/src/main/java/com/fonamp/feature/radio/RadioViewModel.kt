@@ -151,6 +151,12 @@ class RadioViewModel(
         launchSearch(query)
     }
 
+    /** Retry the visible directory search (offline/error retry in Discover). */
+    fun retrySearch() {
+        val current = _state.value as? RadioUiState.Discover ?: return
+        if (current.query.trim().length >= SEARCH_MIN_CHARS) launchSearch(current.query)
+    }
+
     /** Debounced directory search for [query]; supersedes any pending one. */
     private fun launchSearch(query: String) {
         searchJob?.cancel()

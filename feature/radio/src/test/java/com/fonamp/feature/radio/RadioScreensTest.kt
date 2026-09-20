@@ -70,6 +70,9 @@ class RadioScreensTest {
         segment: DiscoverSegment = DiscoverSegment.Countries,
         offline: Boolean = false,
         favorites: Set<String> = emptySet(),
+        remoteResults: List<AudioItem> = emptyList(),
+        remoteSearching: Boolean = false,
+        remoteOffline: Boolean = false,
     ): RadioUiState.Discover {
         val countries = listOf(
             indexRow("country", "Germany", 10),
@@ -85,6 +88,9 @@ class RadioScreensTest {
             visible = pool.filter { it.title.contains(query, ignoreCase = true) },
             offline = offline,
             favorites = favorites,
+            remoteResults = remoteResults,
+            remoteSearching = remoteSearching,
+            remoteOffline = remoteOffline,
         )
     }
 
@@ -126,6 +132,94 @@ class RadioScreensTest {
         compose.onNodeWithText("Germany").assertIsDisplayed()
         compose.onNodeWithTag("segment-tags").performClick()
         assertEquals(DiscoverSegment.GenresTags, selected)
+    }
+
+    @Test
+    fun `search results render below the index with play and favorite`() {
+        var played: AudioItem? = null
+        var toggled: AudioItem? = null
+        val hit = station("Lofi Girl")
+        compose.setContent {
+            DiscoverScreen(
+                state = discover(query = "lofi", remoteResults = listOf(hit)),
+                onQueryChange = {},
+                onSelectSegment = {},
+                onOpenSelection = {},
+                onRefresh = {},
+                onPlay = { played = it },
+                onToggleFavorite = { toggled = it },
+            )
+        }
+        compose.onNodeWithTag("discover-list").performScrollToNode(hasText("Lofi Girl"))
+        compose.onNodeWithText("Search results").assertIsDisplayed()
+        compose.onNodeWithTag("search-play-${hit.stationUuid}").performClick()
+        assertEquals(hit, played)
+        compose.onNodeWithTag("search-fav-${hit.stationUuid}").performClick()
+        assertEquals(hit, toggled)
+    }
+
+    @Test
+    fun `empty search shows empty state and short query shows no section`() {
+        compose.setContent {
+            DiscoverScreen(
+                state = discover(query = "zzz-no-match"),
+                onQueryChange = {},
+                onSelectSegment = {},
+                onOpenSelection = {},
+                onRefresh = {},
+            )
+        }
+        compose.onNodeWithTag("discover-list").performScrollToNode(hasText("No stations found"))
+        compose.onNodeWithText("No stations found").assertIsDisplayed()
+        compose.onNodeWithText("Try another name").assertIsDisplayed()
+    }
+
+    @Test
+    fun `short query shows no search section`() {
+        compose.setContent {
+            DiscoverScreen(
+                state = discover(query = "l"),
+                onQueryChange = {},
+                onSelectSegment = {},
+                onOpenSelection = {},
+                onRefresh = {},
+            )
+        }
+        compose.onNodeWithTag("search-section").assertDoesNotExist()
+    }
+
+    @Test
+    fun `searching shows loading shimmer`() {
+        compose.setContent {
+            DiscoverScreen(
+                state = discover(query = "lofi", remoteSearching = true),
+                onQueryChange = {},
+                onSelectSegment = {},
+                onOpenSelection = {},
+                onRefresh = {},
+            )
+        }
+        compose.onNodeWithTag("discover-list").performScrollToNode(hasText("Search results"))
+        compose.onNodeWithTag("loading-state").assertIsDisplayed()
+    }
+
+    @Test
+    fun `failed search shows retry that retries`() {
+        var retried = 0
+        compose.setContent {
+            DiscoverScreen(
+                state = discover(query = "lofi", remoteOffline = true),
+                onQueryChange = {},
+                onSelectSegment = {},
+                onOpenSelection = {},
+                onRefresh = {},
+                onRetrySearch = { retried++ },
+            )
+        }
+        compose.onNodeWithTag("discover-list").performScrollToNode(hasText("Search failed"))
+        compose.onNodeWithText("Search failed").assertIsDisplayed()
+        compose.onNodeWithText("Retry").performClick()
+        assertEquals(1, retried)
     }
 
     @Test
