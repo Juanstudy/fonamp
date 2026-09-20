@@ -17,13 +17,15 @@ import com.fonamp.provider.radio.CuratedStations
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Discover index segments (radio Req 1). No tops/random/name-search segment exists in v1. */
+/** Discover index segments (radio Req 1). No tops/random segment exists. */
 enum class DiscoverSegment { Countries, GenresTags }
 
 /**
@@ -41,7 +43,9 @@ enum class DiscoverSegment { Countries, GenresTags }
  * Index rows are navigation nodes (`stableId` `country:`/`tag:`, empty
  * `streamUri` per the Slice E contract) — [playStation] refuses them, and
  * [toggleFavorite] refuses rows without a `stationUuid`. The text [query]
- * filter is purely local: zero source calls per keystroke (RAD-1).
+ * filter narrows the loaded index locally with zero source calls per
+ * keystroke (RAD-1) AND drives the debounced server-side name search whose
+ * hits land in [RadioUiState.Discover.remoteResults] (name-search delta).
  */
 sealed interface RadioUiState {
     data object Loading : RadioUiState
@@ -56,6 +60,12 @@ sealed interface RadioUiState {
         val favorites: Set<String> = emptySet(),
         val refreshing: Boolean = false,
         val curated: List<AudioItem> = emptyList(),
+        /** Server-side name-search hits for [query]; empty when idle/short/failed. */
+        val remoteResults: List<AudioItem> = emptyList(),
+        /** A debounced directory search is in flight. */
+        val remoteSearching: Boolean = false,
+        /** Last directory search failed; the index above stays intact. */
+        val remoteOffline: Boolean = false,
     ) : RadioUiState
     data class Stations(
         val selection: BrowseQuery,
@@ -89,12 +99,20 @@ class RadioViewModel(
     private val nowMs: () -> Long = { System.currentTimeMillis() },
     private val curatedProvider: () -> List<AudioItem> = CuratedStations::browseCurated,
 ) {
+    companion object {
+        /** Debounce for server-side name search: one directory call per pause, not per keystroke. */
+        const val SEARCH_DEBOUNCE_MS = 400L
+        /** Minimum trimmed query length that hits the directory; shorter stays local-only. */
+        const val SEARCH_MIN_CHARS = 2
+    }
+
     private val _state = MutableStateFlow<RadioUiState>(RadioUiState.Loading)
     val state: StateFlow<RadioUiState> = _state.asStateFlow()
 
     private var favoriteIds: Set<String> = emptySet()
     private var lastDiscover: RadioUiState.Discover? = null
     private var currentSelection: Pair<BrowseQuery, String>? = null
+    private var searchJob: Job? = null
 
     init {
         scope.launch { favorites.observeAll().collect { rows -> onFavorites(rows) } }
@@ -119,6 +137,41 @@ class RadioViewModel(
     fun setQuery(query: String) {
         val current = _state.value as? RadioUiState.Discover ?: return
         _state.value = current.copy(query = query, visible = visible(current, query))
+        searchJob?.cancel()
+        searchJob = null
+        if (query.trim().length < SEARCH_MIN_CHARS) {
+            // Short/blank query: zero network, clear any remote section.
+            val cleared = _state.value as? RadioUiState.Discover
+            if (cleared != null && (cleared.remoteResults.isNotEmpty() || cleared.remoteSearching || cleared.remoteOffline)) {
+                _state.value = cleared.copy(remoteResults = emptyList(), remoteSearching = false, remoteOffline = false)
+                lastDiscover = _state.value as? RadioUiState.Discover
+            }
+            return
+        }
+        launchSearch(query)
+    }
+
+    /** Debounced directory search for [query]; supersedes any pending one. */
+    private fun launchSearch(query: String) {
+        searchJob?.cancel()
+        searchJob = scope.launch {
+            delay(SEARCH_DEBOUNCE_MS)
+            val searching = _state.value as? RadioUiState.Discover ?: return@launch
+            if (searching.query != query) return@launch
+            _state.value = searching.copy(remoteSearching = true, remoteOffline = false)
+            lastDiscover = _state.value as? RadioUiState.Discover
+            val result = withContext(io) { source.search(query.trim()) }
+            val target = _state.value as? RadioUiState.Discover ?: return@launch
+            // Stale guard: the user kept typing while we were in flight.
+            if (target.query != query) return@launch
+            _state.value = when (result) {
+                is SourceResult.Ok ->
+                    target.copy(remoteResults = result.v, remoteSearching = false, remoteOffline = false)
+                is SourceResult.Fail ->
+                    target.copy(remoteSearching = false, remoteOffline = true)
+            }
+            lastDiscover = _state.value as? RadioUiState.Discover
+        }
     }
 
     fun selectSegment(segment: DiscoverSegment) {
@@ -132,13 +185,33 @@ class RadioViewModel(
 
     /** Tap 2 of the 3-tap flow: open the station list for one index row. */
     fun openSelection(selection: BrowseQuery, title: String) {
+        // A pending name search belongs to Discover: cancel it so its late
+        // emission can never land on the Stations sequence.
+        searchJob?.cancel()
+        searchJob = null
         currentSelection = selection to title
         loadStations(selection, title, forceFetch = false)
     }
 
     fun backToDiscover() {
+        searchJob?.cancel()
+        searchJob = null
         currentSelection = null
-        lastDiscover?.let { _state.value = it } ?: loadIndex(forceFetch = false)
+        val restored = lastDiscover
+        if (restored != null) {
+            // Drop a stale in-flight flag from a search cancelled above.
+            _state.value = restored.copy(remoteSearching = false)
+            lastDiscover = _state.value as? RadioUiState.Discover
+            // Re-fire the visible query when it has no results yet: navigating
+            // away cancelled the pending search, the query text survived.
+            if (restored.query.trim().length >= SEARCH_MIN_CHARS &&
+                restored.remoteResults.isEmpty() && !restored.remoteOffline
+            ) {
+                launchSearch(restored.query)
+            }
+        } else {
+            loadIndex(forceFetch = false)
+        }
     }
 
     /**

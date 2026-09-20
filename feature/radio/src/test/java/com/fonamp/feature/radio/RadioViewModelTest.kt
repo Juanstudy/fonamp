@@ -16,6 +16,10 @@ import com.fonamp.provider.api.SourceKind
 import com.fonamp.provider.api.SourceResult
 import com.fonamp.provider.api.radioMediaItem
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,9 +31,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Slice H RED: RadioViewModel Turbine flows — Loading/Empty/Offline-with-cache/
- * ErrorRetry, local index filter with zero per-keystroke network, Discover→
- * stations→play raising the player with a radio item, favorite round-trip +
- * restart, index rows never played, no tops/random/name-search surface.
+ * ErrorRetry, local index filter plus debounced server-side name search,
+ * Discover→ stations→play raising the player with a radio item,
+ * favorite round-trip + restart, index rows never played, no tops/random surface.
  *
  * Robolectric only because `streamOf` builds MediaItems; the VM talks to
  * `Source`/`FavoriteDao`/`PlayerManager` interfaces (hand fakes, no MockK).
@@ -41,12 +45,14 @@ class RadioViewModelTest {
     private class FakeRadioSource(
         var indexResult: SourceResult<List<AudioItem>> = SourceResult.Ok(emptyList()),
         var stationsResult: SourceResult<List<AudioItem>> = SourceResult.Ok(emptyList()),
+        var searchResult: SourceResult<List<AudioItem>> = SourceResult.Ok(emptyList()),
     ) : Source {
         override val id = "radio-browser"
         override val kind = SourceKind.RADIO
         var browseCalls = 0
         var searchCalls = 0
         val queries = mutableListOf<BrowseQuery>()
+        val searches = mutableListOf<String>()
         override suspend fun browse(query: BrowseQuery): SourceResult<List<AudioItem>> {
             browseCalls++
             queries += query
@@ -59,7 +65,8 @@ class RadioViewModelTest {
 
         override suspend fun search(q: String): SourceResult<List<AudioItem>> {
             searchCalls++
-            return SourceResult.Ok(emptyList())
+            searches += q
+            return searchResult
         }
 
         override fun streamOf(item: AudioItem): MediaItem = radioMediaItem(item)
@@ -333,7 +340,7 @@ class RadioViewModelTest {
     }
 
     @Test
-    fun `directory search is never used — no tops random or name-search surface`() = runTest {
+    fun `tops and random still have no surface`() = runTest {
         val cache = DirectoryCache()
         cache.putIndex(cachedIndex())
         val source = FakeRadioSource(
@@ -361,6 +368,123 @@ class RadioViewModelTest {
         assertEquals(0, source.searchCalls)
         // Fresh index served from cache (zero network) + stations fetch + refresh.
         assertEquals(2, source.browseCalls)
+    }
+
+    private fun TestScope.searchVm(
+        source: FakeRadioSource,
+        cache: DirectoryCache,
+        scope: kotlinx.coroutines.CoroutineScope,
+    ) = RadioViewModel(
+        source = source,
+        favorites = FakeFavoriteDao(),
+        player = FakePlayerManager(),
+        cache = cache,
+        scope = scope,
+        // Virtual-time IO: debounce + search settle deterministically.
+        io = StandardTestDispatcher(testScheduler),
+    )
+
+    @Test
+    fun `query fires debounced server search and shows remote results`() = runTest {
+        val cache = DirectoryCache()
+        cache.putIndex(cachedIndex())
+        val source = FakeRadioSource(
+            searchResult = SourceResult.Ok(listOf(station("Lofi Girl"))),
+        )
+        val viewModel = searchVm(source, cache, backgroundScope)
+        viewModel.state.test {
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            awaitItem() as RadioUiState.Discover
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertEquals(0, source.searchCalls)
+
+        viewModel.setQuery("lof")
+        advanceTimeBy(RadioViewModel.SEARCH_DEBOUNCE_MS + 100)
+        runCurrent()
+
+        val searched = viewModel.state.value as RadioUiState.Discover
+        assertEquals(1, source.searchCalls)
+        assertEquals(listOf("lof"), source.searches)
+        assertEquals(listOf("Lofi Girl"), searched.remoteResults.map { it.title })
+        assertFalse(searched.remoteSearching)
+        assertFalse(searched.remoteOffline)
+        // The local index found nothing for "lof" — remote search fills the gap.
+        assertTrue(searched.visible.isEmpty())
+    }
+
+    @Test
+    fun `short query stays local with zero network`() = runTest {
+        val cache = DirectoryCache()
+        cache.putIndex(cachedIndex())
+        val source = FakeRadioSource()
+        val viewModel = searchVm(source, cache, backgroundScope)
+        viewModel.state.test {
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            awaitItem() as RadioUiState.Discover
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.setQuery("l")
+        advanceTimeBy(RadioViewModel.SEARCH_DEBOUNCE_MS + 500)
+        runCurrent()
+
+        val state = viewModel.state.value as RadioUiState.Discover
+        assertEquals(0, source.searchCalls)
+        assertTrue(state.remoteResults.isEmpty())
+        assertFalse(state.remoteSearching)
+    }
+
+    @Test
+    fun `clearing the query clears remote results without extra calls`() = runTest {
+        val cache = DirectoryCache()
+        cache.putIndex(cachedIndex())
+        val source = FakeRadioSource(
+            searchResult = SourceResult.Ok(listOf(station("Lofi Girl"))),
+        )
+        val viewModel = searchVm(source, cache, backgroundScope)
+        viewModel.state.test {
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            awaitItem() as RadioUiState.Discover
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.setQuery("lofi")
+        advanceTimeBy(RadioViewModel.SEARCH_DEBOUNCE_MS + 100)
+        runCurrent()
+        assertEquals(1, (viewModel.state.value as RadioUiState.Discover).remoteResults.size)
+
+        viewModel.setQuery("")
+        advanceTimeBy(RadioViewModel.SEARCH_DEBOUNCE_MS + 500)
+        runCurrent()
+
+        val cleared = viewModel.state.value as RadioUiState.Discover
+        assertTrue(cleared.remoteResults.isEmpty())
+        assertFalse(cleared.remoteSearching)
+        assertEquals(1, source.searchCalls)
+    }
+
+    @Test
+    fun `search failure marks remote offline and keeps the index`() = runTest {
+        val cache = DirectoryCache()
+        cache.putIndex(cachedIndex())
+        val source = FakeRadioSource(searchResult = SourceResult.Fail(SourceError.Offline))
+        val viewModel = searchVm(source, cache, backgroundScope)
+        viewModel.state.test {
+            assertTrue(awaitItem() is RadioUiState.Loading)
+            awaitItem() as RadioUiState.Discover
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.setQuery("lofi")
+        advanceTimeBy(RadioViewModel.SEARCH_DEBOUNCE_MS + 100)
+        runCurrent()
+
+        val failed = viewModel.state.value as RadioUiState.Discover
+        assertTrue(failed.remoteOffline)
+        assertTrue(failed.remoteResults.isEmpty())
+        assertFalse(failed.remoteSearching)
+        assertEquals(2, failed.countries.size)
     }
 
 
@@ -441,4 +565,5 @@ class RadioViewModelTest {
         }
         assertTrue(dao.observeAll().first().isEmpty())
     }
+
 }
