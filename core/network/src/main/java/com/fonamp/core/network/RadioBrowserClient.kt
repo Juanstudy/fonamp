@@ -98,6 +98,21 @@ class RadioBrowserClient(
         rows.filter { it.stationuuid.isNotBlank() && it.resolvedStreamUrl.isNotBlank() }
     }
 
+    /**
+     * Name search (name-search delta): stations whose name matches [name] on
+     * the directory side. Same row hygiene as [fetchStations], capped to
+     * [limit] so a broad query never floods the UI. Blank names return empty
+     * with zero network. Transport failures surface typed via mirror fallback.
+     */
+    suspend fun searchStations(name: String, limit: Int = SEARCH_LIMIT): List<StationDto> {
+        if (name.isBlank()) return emptyList()
+        return withMirrorFallback { api ->
+            api.stationsByName(name.trim())
+                .filter { it.stationuuid.isNotBlank() && it.resolvedStreamUrl.isNotBlank() }
+                .take(limit.coerceAtLeast(1))
+        }
+    }
+
     /** Click-count report; result ignored — callers fire-and-forget this. */
     suspend fun click(stationUuid: String) {
         withMirrorFallback { api -> api.click(stationUuid) }
@@ -139,6 +154,8 @@ class RadioBrowserClient(
         const val CONNECT_TIMEOUT_MS = 10_000L
         const val READ_TIMEOUT_MS = 10_000L
         const val CALL_TIMEOUT_MS = 12_000L
+        /** Cap for name-search results: a broad query never floods the UI. */
+        const val SEARCH_LIMIT = 50
 
         val DirectoryJson = Json {
             ignoreUnknownKeys = true
