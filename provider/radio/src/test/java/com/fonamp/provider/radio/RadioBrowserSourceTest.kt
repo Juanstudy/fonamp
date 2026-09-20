@@ -88,26 +88,51 @@ class RadioBrowserSourceTest {
     }
 
     @Test
-    fun `search filters cached stations with zero network`() = runTest {
+    fun `search queries the directory and maps rows`() = runTest {
         val s = server()
         s.enqueue(
             json(
                 """[
-                  {"stationuuid":"u1","name":"Pop FM","url":"http://x/1","country":"Germany","tags":"pop"},
-                  {"stationuuid":"u2","name":"Jazz Bar","url":"http://x/2","country":"France","tags":"jazz"}
+                  {"stationuuid":"u1","name":"Lofi Girl","url":"http://x/1","url_resolved":"https://x/r","bitrate":128,"codec":"MP3","country":"Nowhere","tags":"lofi"},
+                  {"stationuuid":"","name":"No Uuid","url":"http://x/2"},
+                  {"stationuuid":"u3","name":"No Url","url":""}
                 ]""",
             ),
         )
         val source = sourceOf(s)
-        assertTrue(source.browse(BrowseQuery(tag = "pop")) is SourceResult.Ok)
 
-        val before = s.requestCount
-        s.shutdown()
-        servers.remove(s)
+        val found = source.search("lofi") as SourceResult.Ok
+        assertEquals(listOf("Lofi Girl"), found.v.map { it.title })
+        assertEquals("u1", found.v.single().stationUuid)
+        assertTrue(s.takeRequest().path.orEmpty().startsWith("/json/stations/byname/"))
+    }
 
-        val found = source.search("jazz") as SourceResult.Ok
-        assertEquals(listOf("Jazz Bar"), found.v.map { it.title })
-        assertEquals(before, s.requestCount)
+    @Test
+    fun `blank search returns empty with zero network`() = runTest {
+        val s = server()
+        val source = sourceOf(s)
+        val found = source.search("   ") as SourceResult.Ok
+        assertTrue(found.v.isEmpty())
+        assertEquals(0, s.requestCount)
+    }
+
+    @Test
+    fun `search failure returns typed Offline`() = runTest {
+        val dead = server()
+        dead.start()
+        val deadUrl = dead.url("/").toString()
+        dead.shutdown()
+        servers.remove(dead)
+
+        // Search must surface Fail, never throw.
+        val deadSource = RadioBrowserSource(
+            client = RadioBrowserClient(mirrors = listOf(deadUrl)),
+            cache = DirectoryCache(dir = null, nowMs = { 0L }),
+            clickScope = this,
+        )
+        val result = deadSource.search("lofi")
+        assertTrue("expected Fail(Offline), was=$result", result is SourceResult.Fail)
+        assertTrue((result as SourceResult.Fail).e is SourceError.Offline)
     }
 
     @Test
