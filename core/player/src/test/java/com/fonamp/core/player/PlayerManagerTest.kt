@@ -3,6 +3,7 @@ package com.fonamp.core.player
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -306,6 +307,73 @@ class PlayerManagerTest {
     fun `playback service pins 10s stream timeouts`() {
         assertEquals(10_000, PlaybackService.CONNECT_TIMEOUT_MS)
         assertEquals(10_000, PlaybackService.READ_TIMEOUT_MS)
+    }
+
+    @Test
+    fun `repeat cycles off all one off`() = runTest {
+        val manager = FakePlayerManager()
+        manager.state.test {
+            assertEquals(RepeatMode.OFF, awaitItem().repeatMode)
+            manager.cycleRepeat()
+            assertEquals(RepeatMode.ALL, awaitItem().repeatMode)
+            manager.cycleRepeat()
+            assertEquals(RepeatMode.ONE, awaitItem().repeatMode)
+            manager.cycleRepeat()
+            assertEquals(RepeatMode.OFF, awaitItem().repeatMode)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `shuffle toggles and speed walks the cycle`() = runTest {
+        val manager = FakePlayerManager()
+        manager.state.test {
+            val initial = awaitItem()
+            assertEquals(false, initial.shuffleEnabled)
+            assertEquals(1f, initial.speed)
+            manager.toggleShuffle()
+            assertEquals(true, awaitItem().shuffleEnabled)
+            manager.toggleShuffle()
+            assertEquals(false, awaitItem().shuffleEnabled)
+            manager.cycleSpeed()
+            assertEquals(1.25f, awaitItem().speed)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `speed cycle wraps and resets unknowns`() {
+        assertEquals(1.25f, PlayerManager.nextSpeed(1f))
+        assertEquals(0.5f, PlayerManager.nextSpeed(2f))
+        assertEquals(1f, PlayerManager.nextSpeed(1.1f))
+        var speed = 1f
+        repeat(PlayerManager.SPEEDS.size) { speed = PlayerManager.nextSpeed(speed) }
+        assertEquals(1f, speed)
+    }
+
+    @Test
+    fun `repeat maps to media3 both ways`() {
+        assertEquals(Player.REPEAT_MODE_OFF, RepeatMode.OFF.toMedia3())
+        assertEquals(Player.REPEAT_MODE_ALL, RepeatMode.ALL.toMedia3())
+        assertEquals(Player.REPEAT_MODE_ONE, RepeatMode.ONE.toMedia3())
+        assertEquals(RepeatMode.ALL, RepeatMode.fromMedia3(Player.REPEAT_MODE_ALL))
+        assertEquals(RepeatMode.OFF, RepeatMode.fromMedia3(999))
+    }
+
+    @Test
+    fun `play preserves transport modes`() = runTest {
+        val manager = FakePlayerManager()
+        manager.toggleShuffle()
+        manager.cycleRepeat()
+        manager.cycleSpeed()
+        manager.play(listOf(localItem("1")), 0)
+        manager.state.test {
+            val state = awaitItem()
+            assertEquals(true, state.shuffleEnabled)
+            assertEquals(RepeatMode.ALL, state.repeatMode)
+            assertEquals(1.25f, state.speed)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

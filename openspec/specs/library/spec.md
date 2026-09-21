@@ -56,12 +56,12 @@ The system MAY offer a simple title/artist/album text filter in v1 only if it is
 - WHEN collection search is present or absent
 - THEN acceptance passes either way; if present, filtering by title, artist, or album narrows the visible songs without network calls.
 
-### Requirement 6: No shuffle or repeat in v1
+### Requirement 6: Shuffle and repeat for local playback
 
-The system MUST NOT expose shuffle or repeat controls or behavior for local playback in v1; order is the selected queue order with next/previous only.
+The system MUST offer shuffle (randomized order) and repeat (off/all/one) for local playback from the player sheet; with both off, order is the selected queue order with next/previous only.
 
-#### Scenario: No shuffle surface
+#### Scenario: Shuffle and repeat surfaces
 
 - GIVEN local playback in mini-player and full sheet
-- WHEN all playback controls are inspected
-- THEN no shuffle or repeat affordance exists and playback order never randomizes.
+- WHEN shuffle is enabled and repeat is set to all
+- THEN next/previous follow the shuffled order and playback wraps at the queue end instead of stopping.

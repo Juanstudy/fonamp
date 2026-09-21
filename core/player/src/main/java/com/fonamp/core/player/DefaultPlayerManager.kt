@@ -99,8 +99,15 @@ class DefaultPlayerManager @Inject constructor(
             val c = controller ?: return
             val isLive = item?.isLive() ?: false
             _state.update {
+                // Shuffle reorders the ExoPlayer timeline, so the raw
+                // controller index points at the wrong row of our queue:
+                // resolve by mediaId, falling back to the raw index.
+                val resolved = item?.mediaId?.let { id ->
+                    it.queue.indexOfFirst { queued -> queued.mediaId == id }
+                        .takeIf { idx -> idx >= 0 }
+                } ?: c.currentMediaItemIndex.coerceAtLeast(0)
                 it.copy(
-                    index = c.currentMediaItemIndex.coerceAtLeast(0),
+                    index = resolved,
                     isLive = isLive,
                     icyTitle = null,
                     positionMs = 0L,
@@ -142,9 +149,10 @@ class DefaultPlayerManager @Inject constructor(
     override fun play(items: List<MediaItem>, index: Int) {
         if (items.isEmpty()) return
         // Fresh playback context: a timer armed for something else must not
-        // fire into the new queue.
+        // fire into the new queue. Transport modes persist (ExoPlayer parity).
         sleepTimer.clear()
         val safeIndex = index.coerceIn(items.indices)
+        val prev = _state.value
         _state.value = PlayerUiState(
             queue = items,
             index = safeIndex,
@@ -152,6 +160,9 @@ class DefaultPlayerManager @Inject constructor(
             isLive = items[safeIndex].isLive(),
             error = null,
             positionMs = 0L,
+            shuffleEnabled = prev.shuffleEnabled,
+            repeatMode = prev.repeatMode,
+            speed = prev.speed,
         )
         controller?.let {
             it.setMediaItems(items, safeIndex, 0L)
@@ -258,6 +269,24 @@ class DefaultPlayerManager @Inject constructor(
         _state.update { it.copy(sleepEndsAtMs = null) }
     }
 
+    override fun cycleSpeed() {
+        val next = PlayerManager.nextSpeed(_state.value.speed)
+        controller?.setPlaybackSpeed(next)
+        _state.update { it.copy(speed = next) }
+    }
+
+    override fun toggleShuffle() {
+        val next = !_state.value.shuffleEnabled
+        controller?.setShuffleModeEnabled(next)
+        _state.update { it.copy(shuffleEnabled = next) }
+    }
+
+    override fun cycleRepeat() {
+        val next = _state.value.repeatMode.next()
+        controller?.setRepeatMode(next.toMedia3())
+        _state.update { it.copy(repeatMode = next) }
+    }
+
     /** Best-effort release; the service owns the real player lifetime. */
     fun release() {
         stopPositionTicker()
@@ -297,6 +326,9 @@ class DefaultPlayerManager @Inject constructor(
         runCatching {
             c.setMediaItems(current.queue, current.index.coerceIn(current.queue.indices), 0L)
             c.prepare()
+            c.setShuffleModeEnabled(current.shuffleEnabled)
+            c.setRepeatMode(current.repeatMode.toMedia3())
+            c.setPlaybackSpeed(current.speed)
             if (current.isPlaying) c.play() else c.pause()
         }
     }

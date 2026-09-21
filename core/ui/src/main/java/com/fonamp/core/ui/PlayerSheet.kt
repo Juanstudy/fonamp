@@ -19,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -43,8 +44,8 @@ import kotlinx.coroutines.delay
  *
  * Title, artist-or-station, [SourceBadge], ICY line for radio, queue/seek
  * slots for local (owned by later slices), favorite toggle (radio), error
- * banner + retry on failure, optional sleep timer (presets + remaining).
- * No shuffle/repeat/speed affordances.
+ * banner + retry on failure, optional sleep timer (presets + remaining) and
+ * transport controls (shuffle/repeat/speed, all optional). No EQ affordance.
  */
 @Composable
 fun PlayerSheet(
@@ -77,6 +78,18 @@ fun PlayerSheet(
     onClearSleepTimer: (() -> Unit)? = null,
     /** Clock for the remaining-time text; injectable for deterministic tests. */
     nowMs: () -> Long = android.os.SystemClock::elapsedRealtime,
+    /**
+     * Transport modes as primitives (this module stays decoupled from
+     * `core/player` by design). Repeat is two flags: all/one, both false
+     * means off. Each control renders only when its callback is non-null.
+     */
+    shuffleEnabled: Boolean = false,
+    repeatAll: Boolean = false,
+    repeatOne: Boolean = false,
+    speed: Float = 1f,
+    onToggleShuffle: (() -> Unit)? = null,
+    onCycleRepeat: (() -> Unit)? = null,
+    onCycleSpeed: (() -> Unit)? = null,
 ) {
     var showSleepDialog by remember { mutableStateOf(false) }
     // Minute-fresh remaining text while a timer is armed (radio has no
@@ -242,6 +255,24 @@ fun PlayerSheet(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (onToggleShuffle != null) {
+                IconButton(
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .testTag("player-shuffle"),
+                    onClick = onToggleShuffle,
+                ) {
+                    Icon(
+                        imageVector = AppIcons.Shuffle,
+                        contentDescription = if (shuffleEnabled) "Shuffle on" else "Shuffle off",
+                        tint = if (shuffleEnabled) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            LocalContentColor.current
+                        },
+                    )
+                }
+            }
             if (onPrev != null) {
                 IconButton(
                     modifier = Modifier
@@ -276,6 +307,42 @@ fun PlayerSheet(
                     Icon(
                         imageVector = AppIcons.SkipNext,
                         contentDescription = "Next",
+                    )
+                }
+            }
+            if (onCycleRepeat != null) {
+                val repeatOn = repeatAll || repeatOne
+                IconButton(
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .testTag("player-repeat"),
+                    onClick = onCycleRepeat,
+                ) {
+                    Icon(
+                        imageVector = AppIcons.Repeat,
+                        contentDescription = when {
+                            repeatOne -> "Repeat one"
+                            repeatAll -> "Repeat all"
+                            else -> "Repeat off"
+                        },
+                        tint = if (repeatOn) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            LocalContentColor.current
+                        },
+                    )
+                }
+            }
+            if (onCycleSpeed != null) {
+                TextButton(
+                    onClick = onCycleSpeed,
+                    modifier = Modifier
+                        .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                        .testTag("player-speed"),
+                ) {
+                    Text(
+                        text = formatSpeed(speed),
+                        style = MaterialTheme.typography.bodyLarge,
                     )
                 }
             }
@@ -387,6 +454,10 @@ private fun formatSleepRemaining(remainingMs: Long): String {
     val minutes = (remainingMs + 59_999L) / 60_000L
     return if (minutes < 1L) "Stops in less than 1 min" else "Stops in $minutes min"
 }
+
+/** Speed label: whole values read "1x", fractional "1.25x". */
+internal fun formatSpeed(speed: Float): String =
+    if (speed == speed.toInt().toFloat()) "${speed.toInt()}x" else "${speed}x"
 
 /** Formats milliseconds to mm:ss or hh:mm:ss. */
 internal fun formatDuration(millis: Long): String {
