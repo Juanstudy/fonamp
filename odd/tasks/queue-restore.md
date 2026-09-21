@@ -28,24 +28,25 @@ Out of scope: persistir shuffle/repeat/speed en el snapshot (lo de `feat/playbac
 Rama `feat/queue-restore` en worktree `../fonamp-queue-restore`. Archivos: `core/player` (`PlayerManager`, `FakePlayerManager`, `DefaultPlayerManager`, `QueueResolver` + tests), `app` (`QueueRestorer`, `FonampShell`), este documento. Sin bump de versión (el bump va aparte por convención).
 
 ## Acceptance criteria
-- [ ] Reabrir con snapshot local restaura cola + índice + posición, pausado.
-- [ ] Item live restaura con posición 0.
-- [ ] IDs irresolubles se dropean; si no queda nada, idle limpio.
-- [ ] Snapshot vacío/nulo no toca el player.
-- [ ] `./gradlew :core:player:test` verde; `./gradlew test` + `assembleDebug` + audits al cierre.
+- [x] Reabrir con snapshot local restaura cola + índice + posición, pausado.
+- [x] Item live restaura con posición 0.
+- [x] IDs irresolubles se dropean; si no queda nada, idle limpio.
+- [x] Snapshot vacío/nulo no toca el player.
+- [x] `./gradlew :core:player:test` verde; `./gradlew test` + `assembleDebug` + audits al cierre.
 
 ## Checks
 - `./gradlew :core:player:test` (por tarea)
 - `./gradlew test` + `./gradlew assembleDebug` + `scripts/audit-toolchain.sh` + `scripts/audit-gates.sh` (cierre)
 
 ## Tasks
-- [ ] **T1** — `PlayerManager.restore` + `Fake` con `positionMs` + tests.
-- [ ] **T2** — `QueueResolver` puro + tests.
-- [ ] **T3** — `DefaultPlayerManager.restore` pausado + `syncPending` con posición.
-- [ ] **T4** — `QueueRestorer` en `app` + wiring `FonampRoot` + verificación final.
+- [x] **T1** — `PlayerManager.restore` + `Fake` con `positionMs` + tests.
+- [x] **T2** — `QueueResolver` puro + tests.
+- [x] **T3** — `DefaultPlayerManager.restore` pausado + `syncPending` con posición.
+- [x] **T4** — `QueueRestorer` en `app` + wiring `FonampRoot` + verificación final.
 
 ## Progress
 - 2026-09-21: documento creado en worktree `../fonamp-queue-restore`, rama `feat/queue-restore` desde `main` (d86c410). Base: snapshot guardado en `PlaybackService`/`PrefsQueueStore`, `lastSnapshot` sin consumir. TDD estándar (Fake+Turbine, sin MockK).
+- 2026-09-21: T1–T4 implementados en 2 work-unit commits (`6bd4c92` player, `b32fe55` app). Verificación: `./gradlew test` verde, `assembleDebug` verde, `audit-toolchain.sh` y `audit-gates.sh` GREEN. Wiring real solo verificable en dispositivo.
 
 ## Next step
-Implementar T1.
+Probar en dispositivo (instalar debug, reproducir, matar proceso, reabrir y verificar cola pausada en posición) y luego PR a `main`. Sin bump (va aparte por convención).
