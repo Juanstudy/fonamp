@@ -121,7 +121,10 @@ fun SettingsScreen(
         UpdateAvailableDialog(
             tag = available.tag,
             notes = available.notes,
-            onDownload = { onDownloadUpdate(available.apkUrl, available.tag) },
+            onDownload = {
+                onDownloadUpdate(available.apkUrl, available.tag)
+                onDismissUpdate()
+            },
             onLater = onDismissUpdate,
         )
     }
