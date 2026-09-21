@@ -4,6 +4,10 @@ Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Ch
 
 ## [Unreleased]
 
+## [0.0.11] — 2026-09-21
+### Added
+- Controles de reproducción en la sheet: velocidad cíclica, shuffle y repeat (off/all/one).
+
 ## [0.0.10] — 2026-09-21
 ### Added
 - Actualización in-app: al abrir revisa GitHub Releases y ofrece descargar/instalar la versión nueva.

@@ -58,6 +58,8 @@ class FakePlayerManager : PlayerManager {
         val failure = pendingFailure
         pendingFailure = null
         val safeIndex = index.coerceIn(items.indices)
+        // Transport modes persist across queue replacements (ExoPlayer parity).
+        val current = _state.value
         _state.value = if (failure != null) {
             PlayerUiState(
                 queue = items,
@@ -65,6 +67,9 @@ class FakePlayerManager : PlayerManager {
                 isPlaying = false,
                 isLive = items[safeIndex].isLive(),
                 error = failure,
+                shuffleEnabled = current.shuffleEnabled,
+                repeatMode = current.repeatMode,
+                speed = current.speed,
             )
         } else {
             PlayerUiState(
@@ -74,6 +79,9 @@ class FakePlayerManager : PlayerManager {
                 isLive = items[safeIndex].isLive(),
                 error = null,
                 positionMs = 0L,
+                shuffleEnabled = current.shuffleEnabled,
+                repeatMode = current.repeatMode,
+                speed = current.speed,
             )
         }
     }
@@ -158,5 +166,19 @@ class FakePlayerManager : PlayerManager {
 
     override fun clearSleepTimer() {
         _state.update { current -> current.copy(sleepEndsAtMs = null) }
+    }
+
+    override fun cycleSpeed() {
+        _state.update { current -> current.copy(speed = PlayerManager.nextSpeed(current.speed)) }
+    }
+
+    override fun toggleShuffle() {
+        // Flag only: the fake keeps linear order so unit tests stay
+        // deterministic; real shuffling is ExoPlayer-owned (device-verified).
+        _state.update { current -> current.copy(shuffleEnabled = !current.shuffleEnabled) }
+    }
+
+    override fun cycleRepeat() {
+        _state.update { current -> current.copy(repeatMode = current.repeatMode.next()) }
     }
 }

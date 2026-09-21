@@ -13,9 +13,9 @@ import kotlinx.coroutines.flow.StateFlow
  *
  * Per-source model (player Req 3): radio is play/stop ([togglePlayPause] on a
  * playing live item stops, keeping the live edge honest; [seekTo] is a no-op
- * when live), local is pause/resume plus [next]/[prev]/[seekTo], plus an
- * optional sleep timer ([setSleepTimer]) for both. No shuffle/repeat/speed
- * in v1.
+ * when live), local is pause/resume plus [next]/[prev]/[seekTo], plus sleep
+ * timer ([setSleepTimer]) and full transport controls ([cycleSpeed],
+ * [toggleShuffle], [cycleRepeat]) for both sources. No EQ in v1.
  */
 interface PlayerManager {
     /** Render state for the mini-player and sheet. */
@@ -65,4 +65,27 @@ interface PlayerManager {
 
     /** Cancel any active sleep timer; no-op when none. */
     fun clearSleepTimer()
+
+    /**
+     * Advance playback speed through [SPEEDS] (wraps to 1x). Applies to
+     * local and radio; modes persist across queue replacements.
+     */
+    fun cycleSpeed()
+
+    /** Toggle shuffle mode; modes persist across queue replacements. */
+    fun toggleShuffle()
+
+    /** Cycle repeat OFF → ALL → ONE → OFF. */
+    fun cycleRepeat()
+
+    companion object {
+        /** Speed cycle, starting and wrapping at 1x. */
+        val SPEEDS = listOf(1f, 1.25f, 1.5f, 1.75f, 2f, 0.5f, 0.75f)
+
+        /** Next speed after [current]; unknown values reset to 1x. */
+        fun nextSpeed(current: Float): Float {
+            val index = SPEEDS.indexOf(current)
+            return if (index < 0) 1f else SPEEDS[(index + 1) % SPEEDS.size]
+        }
+    }
 }

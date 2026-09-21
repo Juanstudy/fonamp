@@ -50,6 +50,7 @@ import com.fonamp.core.permissions.CollectionEntryRoute
 import com.fonamp.core.permissions.NotificationGate
 import com.fonamp.core.player.PlayerError
 import com.fonamp.core.player.PlayerManager
+import com.fonamp.core.player.RepeatMode
 import com.fonamp.core.player.durationMs
 import com.fonamp.core.ui.FonampTheme
 import com.fonamp.core.ui.MiniPlayer
@@ -284,6 +285,13 @@ fun FonampRoot(
                     sleepEndsAtMs = playerState.sleepEndsAtMs,
                     onSetSleepTimer = player::setSleepTimer,
                     onClearSleepTimer = player::clearSleepTimer,
+                    shuffleEnabled = playerState.shuffleEnabled,
+                    repeatAll = playerState.repeatMode == RepeatMode.ALL,
+                    repeatOne = playerState.repeatMode == RepeatMode.ONE,
+                    speed = playerState.speed,
+                    onToggleShuffle = player::toggleShuffle,
+                    onCycleRepeat = player::cycleRepeat,
+                    onCycleSpeed = player::cycleSpeed,
                 )
             }
         }

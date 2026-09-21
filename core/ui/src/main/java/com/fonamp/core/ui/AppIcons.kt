@@ -310,6 +310,76 @@ object AppIcons {
             }
         }
     }
+
+    /**
+     * Copy of `Icons.Filled.Shuffle` (extended-only). Transport control;
+     * core has no shuffle glyph, so copied, not replaced. Path is the
+     * official baseline 24px verbatim (Apache-2.0, material-icons repo).
+     */
+    val Shuffle: ImageVector by lazy {
+        appMaterialIcon(name = "Filled.Shuffle") {
+            appMaterialPath {
+                moveTo(10.59f, 9.17f)
+                lineTo(5.41f, 4.0f)
+                lineTo(4.0f, 5.41f)
+                lineToRelative(5.17f, 5.17f)
+                lineToRelative(1.42f, -1.41f)
+                close()
+                moveTo(14.5f, 4.0f)
+                lineToRelative(2.04f, 2.04f)
+                lineTo(4.0f, 18.59f)
+                lineTo(5.41f, 20.0f)
+                lineTo(17.96f, 7.46f)
+                lineTo(20.0f, 9.5f)
+                verticalLineTo(4.0f)
+                horizontalLineToRelative(-5.5f)
+                close()
+                moveTo(14.83f, 13.41f)
+                lineToRelative(-1.41f, 1.41f)
+                lineToRelative(3.13f, 3.13f)
+                lineTo(14.5f, 20.0f)
+                horizontalLineTo(20.0f)
+                verticalLineToRelative(-5.5f)
+                lineToRelative(-2.04f, 2.04f)
+                lineToRelative(-3.13f, -3.13f)
+                close()
+            }
+        }
+    }
+
+    /**
+     * Copy of `Icons.Filled.Repeat` (extended-only). Transport control;
+     * core has no repeat glyph, so copied, not replaced. Path is the
+     * official baseline 24px verbatim (Apache-2.0, material-icons repo).
+     */
+    val Repeat: ImageVector by lazy {
+        appMaterialIcon(name = "Filled.Repeat") {
+            appMaterialPath {
+                moveTo(7.0f, 7.0f)
+                horizontalLineToRelative(10.0f)
+                verticalLineToRelative(3.0f)
+                lineToRelative(4.0f, -4.0f)
+                lineToRelative(-4.0f, -4.0f)
+                verticalLineToRelative(3.0f)
+                horizontalLineTo(5.0f)
+                verticalLineToRelative(6.0f)
+                horizontalLineToRelative(2.0f)
+                verticalLineTo(7.0f)
+                close()
+                moveTo(17.0f, 17.0f)
+                horizontalLineTo(7.0f)
+                verticalLineToRelative(-3.0f)
+                lineToRelative(-4.0f, 4.0f)
+                lineToRelative(4.0f, 4.0f)
+                verticalLineToRelative(-3.0f)
+                horizontalLineToRelative(12.0f)
+                verticalLineToRelative(-6.0f)
+                horizontalLineToRelative(-2.0f)
+                verticalLineToRelative(4.0f)
+                close()
+            }
+        }
+    }
 }
 
 /**

@@ -28,13 +28,13 @@ The system MUST continue audio with the screen off and while other tabs or apps 
 
 ### Requirement 3: Per-source playback model
 
-The system MUST offer radio as play/stop with ICY metadata display when the stream provides it, and local as queue playback with next/previous plus seek bar, and MUST NOT offer shuffle, repeat, or speed controls. A sleep timer (one-shot stop after a chosen duration) is offered from the sheet for both sources.
+The system MUST offer radio as play/stop with ICY metadata display when the stream provides it, and local as queue playback with next/previous plus seek bar. Shuffle, repeat, playback speed, and a sleep timer (one-shot stop after a chosen duration) are offered from the sheet for both sources.
 
 #### Scenario: Radio versus local controls
 
 - GIVEN the full player sheet for a radio station showing ICY metadata when available
 - WHEN compared with the sheet for a local song
-- THEN the radio sheet shows play/stop and metadata without a seek bar, the local sheet shows next/previous and a working seek bar, both sheets offer the sleep timer, and neither sheet shows shuffle, repeat, or speed controls.
+- THEN the radio sheet shows play/stop and metadata without a seek bar, the local sheet shows next/previous and a working seek bar, and both sheets offer shuffle, repeat, speed, and sleep controls.
 
 ### Requirement 4: Stream failure handling
 

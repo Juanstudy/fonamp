@@ -403,6 +403,88 @@ class UiStatesTest {
         rule.onNodeWithTag("player-sleep").assertDoesNotExist()
     }
 
+    // PlayerSheet transport controls ------------------------------------------
+
+    private fun transportSheet(
+        shuffleEnabled: Boolean = false,
+        repeatAll: Boolean = false,
+        repeatOne: Boolean = false,
+        speed: Float = 1f,
+        onToggleShuffle: (() -> Unit)? = {},
+        onCycleRepeat: (() -> Unit)? = {},
+        onCycleSpeed: (() -> Unit)? = {},
+    ) {
+        rule.setContent {
+            FonampTheme {
+                PlayerSheet(
+                    title = "Night Wave",
+                    subtitle = null,
+                    source = SourceBadgeKind.LOCAL,
+                    isPlaying = true,
+                    onTogglePlayPause = {},
+                    onClose = {},
+                    shuffleEnabled = shuffleEnabled,
+                    repeatAll = repeatAll,
+                    repeatOne = repeatOne,
+                    speed = speed,
+                    onToggleShuffle = onToggleShuffle,
+                    onCycleRepeat = onCycleRepeat,
+                    onCycleSpeed = onCycleSpeed,
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `transport buttons hidden without callbacks`() {
+        transportSheet(
+            onToggleShuffle = null,
+            onCycleRepeat = null,
+            onCycleSpeed = null,
+        )
+        rule.onNodeWithTag("player-shuffle").assertDoesNotExist()
+        rule.onNodeWithTag("player-repeat").assertDoesNotExist()
+        rule.onNodeWithTag("player-speed").assertDoesNotExist()
+    }
+
+    @Test
+    fun `transport buttons fire and reflect state`() {
+        var shuffles = 0
+        var repeats = 0
+        var speeds = 0
+        transportSheet(
+            shuffleEnabled = true,
+            repeatOne = true,
+            speed = 1.5f,
+            onToggleShuffle = { shuffles++ },
+            onCycleRepeat = { repeats++ },
+            onCycleSpeed = { speeds++ },
+        )
+        rule.onNodeWithContentDescription("Shuffle on").assertExists()
+        rule.onNodeWithContentDescription("Repeat one").assertExists()
+        rule.onNodeWithText("1.5x").assertExists()
+        rule.onNodeWithTag("player-shuffle").performScrollTo().performClick()
+        rule.onNodeWithTag("player-repeat").performScrollTo().performClick()
+        rule.onNodeWithTag("player-speed").performScrollTo().performClick()
+        org.junit.Assert.assertEquals(1, shuffles)
+        org.junit.Assert.assertEquals(1, repeats)
+        org.junit.Assert.assertEquals(1, speeds)
+    }
+
+    @Test
+    fun `repeat all reads correctly with whole speed`() {
+        transportSheet(repeatAll = true, speed = 1f)
+        rule.onNodeWithContentDescription("Repeat all").assertExists()
+        rule.onNodeWithText("1x").assertExists()
+    }
+
+    @Test
+    fun `transport defaults read off`() {
+        transportSheet()
+        rule.onNodeWithContentDescription("Repeat off").assertExists()
+        rule.onNodeWithContentDescription("Shuffle off").assertExists()
+    }
+
     @Test
     fun `formatDuration formats properly`() {
         org.junit.Assert.assertEquals("0:00", formatDuration(0L))
