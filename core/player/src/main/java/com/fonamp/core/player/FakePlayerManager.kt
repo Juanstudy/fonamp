@@ -32,22 +32,24 @@ class FakePlayerManager : PlayerManager {
 
     /**
      * Install a saved queue as paused context (process-death coherence).
-     * Empty snapshot → clean idle. Never sets `isPlaying=true`.
+     * Empty snapshot → clean idle. Never sets `isPlaying=true`. [positionMs]
+     * is kept for local items and forced to 0 for live radio.
      */
-    fun restore(items: List<MediaItem>, index: Int) {
+    override fun restore(items: List<MediaItem>, index: Int, positionMs: Long) {
         if (items.isEmpty()) {
             _state.value = PlayerUiState()
             return
         }
         val safeIndex = index.coerceIn(items.indices)
+        val isLive = items[safeIndex].isLive()
         _state.value = PlayerUiState(
             queue = items,
             index = safeIndex,
             isPlaying = false,
-            isLive = items[safeIndex].isLive(),
+            isLive = isLive,
             icyTitle = null,
             error = null,
-            positionMs = 0L,
+            positionMs = if (isLive) 0L else positionMs.coerceAtLeast(0L),
         )
     }
 

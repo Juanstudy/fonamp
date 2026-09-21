@@ -248,6 +248,32 @@ class DefaultPlayerManager @Inject constructor(
         } ?: connect()
     }
 
+    override fun restore(items: List<MediaItem>, index: Int, positionMs: Long) {
+        if (items.isEmpty()) return
+        // Restored context must never auto-play: a timer armed for something
+        // else must not fire into it either.
+        sleepTimer.clear()
+        stopPositionTicker()
+        val safeIndex = index.coerceIn(items.indices)
+        val isLive = items[safeIndex].isLive()
+        val safePosition = if (isLive) 0L else positionMs.coerceAtLeast(0L)
+        _state.value = PlayerUiState(
+            queue = items,
+            index = safeIndex,
+            isPlaying = false,
+            isLive = isLive,
+            error = null,
+            positionMs = safePosition,
+        )
+        controller?.let {
+            runCatching {
+                it.setMediaItems(items, safeIndex, safePosition)
+                it.prepare()
+                it.pause()
+            }
+        } ?: connect()
+    }
+
     override fun setSleepTimer(durationMs: Long) {
         sleepTimer.set(durationMs)
         _state.update { it.copy(sleepEndsAtMs = sleepTimer.endsAtMs.value) }
@@ -288,14 +314,17 @@ class DefaultPlayerManager @Inject constructor(
     }
 
     /**
-     * Replays optimistic pre-connect state (play/retry/toggle issued while
-     * unbound) so the controller converges with what the UI already shows.
+     * Replays optimistic pre-connect state (play/restore/retry/toggle issued
+     * while unbound) so the controller converges with what the UI already
+     * shows. Restored queues replay paused at their saved position — never
+     * auto-playing.
      */
     private fun syncPendingToController(c: MediaController) {
         val current = _state.value
         if (current.queue.isEmpty()) return
         runCatching {
-            c.setMediaItems(current.queue, current.index.coerceIn(current.queue.indices), 0L)
+            val startMs = if (current.isLive) 0L else current.positionMs.coerceAtLeast(0L)
+            c.setMediaItems(current.queue, current.index.coerceIn(current.queue.indices), startMs)
             c.prepare()
             if (current.isPlaying) c.play() else c.pause()
         }

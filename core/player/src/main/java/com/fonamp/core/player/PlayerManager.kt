@@ -24,6 +24,14 @@ interface PlayerManager {
     /** Replace the queue and start [index]. Clears any banner. */
     fun play(items: List<MediaItem>, index: Int)
 
+    /**
+     * Install a saved queue as paused context (process-death coherence, Req 6).
+     * Restored queue or clean idle — never phantom-playing (`isPlaying` stays
+     * false). [positionMs] is the saved anchor for local items; it is forced
+     * to 0 for live radio (no seek bar). Empty [items] is a no-op.
+     */
+    fun restore(items: List<MediaItem>, index: Int, positionMs: Long = 0L)
+
     /** Convenience for one-tap radio/local play. */
     fun playSingle(item: MediaItem) = play(listOf(item), 0)
 
