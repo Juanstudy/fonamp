@@ -7,6 +7,7 @@ import com.fonamp.core.database.FavoriteDao
 import com.fonamp.core.database.FonampDatabase
 import com.fonamp.core.database.ThemeDao
 import com.fonamp.core.network.DirectoryCache
+import com.fonamp.core.network.GithubReleasesClient
 import com.fonamp.core.network.RadioBrowserClient
 import com.fonamp.core.player.DefaultPlayerManager
 import com.fonamp.core.player.PlayerManager
@@ -85,6 +86,10 @@ object DatabaseModule {
     @Singleton
     fun provideRadioClient(@ApplicationContext context: Context): RadioBrowserClient =
         RadioBrowserClient(cacheDir = File(context.cacheDir, "http"))
+
+    @Provides
+    @Singleton
+    fun provideGithubReleasesClient(): GithubReleasesClient = GithubReleasesClient()
 }
 
 /**

@@ -5,12 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.fonamp.core.database.FavoriteDao
 import com.fonamp.core.database.ThemeDao
 import com.fonamp.core.network.DirectoryCache
+import com.fonamp.core.network.GithubReleasesClient
 import com.fonamp.core.player.PlayerManager
 import com.fonamp.feature.library.LibraryPlayer
 import com.fonamp.feature.library.LibraryViewModel
 import com.fonamp.feature.radio.FavoritesViewModel
 import com.fonamp.feature.radio.RadioViewModel
 import com.fonamp.feature.settings.SettingsViewModel
+import com.fonamp.feature.settings.UpdateCheckViewModel
 import com.fonamp.provider.api.Source
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -84,11 +86,47 @@ class RadioHolderViewModel @Inject constructor(
 class SettingsHolderViewModel @Inject constructor(
     private val themeDao: ThemeDao,
     private val cache: DirectoryCache,
+    private val releases: GithubReleasesClient,
 ) : ViewModel() {
     val settings: SettingsViewModel by lazy {
         SettingsViewModel(
             themeDao = themeDao,
             cache = cache,
+            scope = viewModelScope,
+            io = Dispatchers.IO,
+        )
+    }
+    val updates: UpdateCheckViewModel by lazy {
+        UpdateCheckViewModel(
+            fetchLatest = {
+                releases.fetchLatest(
+                    GithubReleasesClient.REPO_OWNER,
+                    GithubReleasesClient.REPO_NAME,
+                )
+            },
+            scope = viewModelScope,
+            io = Dispatchers.IO,
+        )
+    }
+}
+
+/**
+ * Shell-root holder for the cold-start update check (one instance per
+ * process at the activity entry — deliberately separate from the Settings
+ * entry instance; both converge on the same server truth on demand).
+ */
+@HiltViewModel
+class UpdateHolderViewModel @Inject constructor(
+    private val releases: GithubReleasesClient,
+) : ViewModel() {
+    val updates: UpdateCheckViewModel by lazy {
+        UpdateCheckViewModel(
+            fetchLatest = {
+                releases.fetchLatest(
+                    GithubReleasesClient.REPO_OWNER,
+                    GithubReleasesClient.REPO_NAME,
+                )
+            },
             scope = viewModelScope,
             io = Dispatchers.IO,
         )
