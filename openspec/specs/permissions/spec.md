@@ -8,13 +8,13 @@ Define the v1 runtime-permission posture: minimal permissions requested on deman
 
 ### Requirement 1: Minimal permission set
 
-The system MUST request at most audio-read access, internet, foreground-service playback, and notifications, and MUST NOT request location, contacts, storage-write, or any other runtime permission in v1.
+The system MUST request at most audio-read access, internet, foreground-service playback, notifications, and package-install handoff (`REQUEST_INSTALL_PACKAGES`, install-time only — the platform always confirms the install with the user), and MUST NOT request location, contacts, storage-write, or any other runtime permission.
 
 #### Scenario: Permission audit
 
 - GIVEN the merged manifest and a fresh install
 - WHEN the requested permissions are listed
-- THEN only the audio, internet, foreground-playback, and notification set appears, and the app functions without any additional grant.
+- THEN only the audio, internet, foreground-playback, notification, and package-install set appears, and the app functions without any additional grant.
 
 ### Requirement 2: On-demand audio permission with inline justification
 
@@ -44,10 +44,10 @@ The system MUST show a designed Denied state with the why-needed explanation and
 
 ### Requirement 4: Privacy posture
 
-The system MUST include zero third-party trackers, keep favorites, theme, and cache on-device, and send no data off-device except directory API calls (radio-browser with mirrors and click-count) and user-initiated stream fetches, using cleartext HTTP only where third-party radio streams require it.
+The system MUST include zero third-party trackers, keep favorites, theme, and cache on-device, and send no data off-device except directory API calls (radio-browser with mirrors and click-count), update-check calls (api.github.com releases plus release-asset hosts), and user-initiated stream fetches, using cleartext HTTP only where third-party radio streams require it.
 
 #### Scenario: Network egress check
 
 - GIVEN the app exercising Collection, Discover, playback, and favorites
 - WHEN outbound traffic is captured
-- THEN destinations are limited to radio-browser mirrors, click-count, and the chosen audio streams, with no analytics, ads, or crash-reporter endpoints contacted.
+- THEN destinations are limited to radio-browser mirrors, click-count, api.github.com plus release-asset hosts, and the chosen audio streams, with no analytics, ads, or crash-reporter endpoints contacted.

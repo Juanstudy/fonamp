@@ -3,6 +3,8 @@
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Changed / Fixed` por versión. Cada release de GitHub lleva además 3-5 bullets en lenguaje de usuario.
 
 ## [Unreleased]
+### Added
+- Actualización in-app: al abrir revisa GitHub Releases y ofrece descargar/instalar la versión nueva.
 
 ## [0.0.9] — 2026-09-20
 ### Added

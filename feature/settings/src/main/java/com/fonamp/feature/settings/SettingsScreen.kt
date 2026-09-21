@@ -34,9 +34,10 @@ import com.fonamp.core.database.ThemeMode
  * Slice I: Settings tab (settings Req 1–4).
  *
  * Theme System/Light/Dark (backed by `ThemeDao`, applies without restart),
- * directory-cache usage + clear with confirmation + freed bytes, and About
- * (version/licenses/source). v1 exposes no tab editor, EQ, sleep timer, or
- * playback-speed control anywhere on this surface.
+ * directory-cache usage + clear with confirmation + freed bytes, About
+ * (version/licenses/source), and update check (latest GitHub release with
+ * Download/Later; download itself is app-owned). v1 exposes no tab editor,
+ * EQ, or playback-speed control anywhere on this surface.
  */
 @Composable
 fun SettingsScreen(
@@ -46,6 +47,10 @@ fun SettingsScreen(
     onDismissConfirmation: () -> Unit,
     modifier: Modifier = Modifier,
     version: String = "0.1.0",
+    updateState: UpdateUiState = UpdateUiState.Idle,
+    onCheckUpdates: () -> Unit = {},
+    onDownloadUpdate: (apkUrl: String, tag: String) -> Unit = { _, _ -> },
+    onDismissUpdate: () -> Unit = {},
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
 
@@ -100,6 +105,28 @@ fun SettingsScreen(
                 "Sources: on-device library plus the radio-browser directory.",
             modifier = Modifier.testTag("about"),
         )
+        Button(
+            onClick = onCheckUpdates,
+            modifier = Modifier.testTag("check-updates"),
+            enabled = updateState !is UpdateUiState.Checking,
+        ) {
+            Text(
+                if (updateState is UpdateUiState.Checking) "Checking…" else "Check for updates",
+            )
+        }
+    }
+
+    val available = updateState as? UpdateUiState.Available
+    if (available != null) {
+        UpdateAvailableDialog(
+            tag = available.tag,
+            notes = available.notes,
+            onDownload = {
+                onDownloadUpdate(available.apkUrl, available.tag)
+                onDismissUpdate()
+            },
+            onLater = onDismissUpdate,
+        )
     }
 
     if (showClearDialog) {
@@ -128,6 +155,48 @@ fun SettingsScreen(
 }
 
 /**
+ * Update prompt shared by the Settings entry and the shell-root auto-check:
+ * version + notes with Download/Later. Downloading and installing stay in
+ * `:app` (the installer seam); this surface only reports the choice.
+ */
+@Composable
+fun UpdateAvailableDialog(
+    tag: String,
+    notes: String?,
+    onDownload: () -> Unit,
+    onLater: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    AlertDialog(
+        onDismissRequest = onLater,
+        modifier = modifier.testTag("update-dialog"),
+        title = { Text("Update available: $tag") },
+        text = {
+            Text(
+                text = (notes ?: "A new Fonamp release is ready to download.").take(600),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDownload,
+                modifier = Modifier.testTag("update-download"),
+            ) {
+                Text("Download")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onLater,
+                modifier = Modifier.testTag("update-later"),
+            ) {
+                Text("Later")
+            }
+        },
+    )
+}
+
+/**
  * Stateful entry for app wiring (Slice I): collects the view-model state and
  * surfaces the clear confirmation. Stateless [SettingsScreen] above stays
  * directly testable. [snackbar] is owned by the app scaffold.
@@ -138,12 +207,21 @@ fun SettingsRoute(
     snackbar: SnackbarHostState,
     modifier: Modifier = Modifier,
     version: String = "0.1.0",
+    updates: UpdateCheckViewModel,
+    onDownloadUpdate: (apkUrl: String, tag: String) -> Unit = { _, _ -> },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     state.clearConfirmation?.let { message ->
         LaunchedEffect(message) {
             snackbar.showSnackbar(message)
             viewModel.dismissConfirmation()
+        }
+    }
+    val updateState by updates.state.collectAsStateWithLifecycle()
+    if (updateState is UpdateUiState.UpToDate) {
+        LaunchedEffect(updateState) {
+            snackbar.showSnackbar("Fonamp is up to date ($version).")
+            updates.dismiss()
         }
     }
     SettingsScreen(
@@ -153,6 +231,10 @@ fun SettingsRoute(
         onDismissConfirmation = viewModel::dismissConfirmation,
         modifier = modifier,
         version = version,
+        updateState = updateState,
+        onCheckUpdates = { updates.checkForUpdates(version) },
+        onDownloadUpdate = onDownloadUpdate,
+        onDismissUpdate = updates::dismiss,
     )
 }
 

@@ -28,13 +28,13 @@ The system MUST show directory-cache and storage usage and provide a clear-direc
 
 ### Requirement 3: About information
 
-The system MUST display the app version, open-source licenses, and source reference in Settings.
+The system MUST display the app version, open-source licenses, source reference, and an update check (latest GitHub release with Download/Later) in Settings.
 
 #### Scenario: About visible
 
 - GIVEN the Settings tab
 - WHEN scrolled to About
-- THEN version, licenses entry, and source link are all present and readable.
+- THEN version, licenses entry, source link, and a "Check for updates" action are all present; tapping it with a newer release shows Download/Later, and with the current release confirms up-to-date.
 
 ### Requirement 4: No advanced customization in v1
 
