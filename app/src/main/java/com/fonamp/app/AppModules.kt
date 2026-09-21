@@ -11,6 +11,8 @@ import com.fonamp.core.network.GithubReleasesClient
 import com.fonamp.core.network.RadioBrowserClient
 import com.fonamp.core.player.DefaultPlayerManager
 import com.fonamp.core.player.PlayerManager
+import com.fonamp.core.player.PrefsQueueStore
+import com.fonamp.core.player.QueueStore
 import com.fonamp.feature.library.LibraryPlayer
 import com.fonamp.provider.api.Source
 import com.fonamp.provider.local.LocalSource
@@ -52,6 +54,16 @@ object SourceModule {
         client: RadioBrowserClient,
         cache: DirectoryCache,
     ): Source = RadioBrowserSource(client, cache)
+
+    /**
+     * Cold-start restore backing: the same `SharedPreferences` snapshot
+     * [com.fonamp.core.player.PlaybackService] writes on every queue and
+     * position transition (player Req 6). Injected into [QueueRestorer].
+     */
+    @Provides
+    @Singleton
+    fun provideQueueStore(@ApplicationContext context: Context): QueueStore =
+        PrefsQueueStore(context)
 }
 
 @Module

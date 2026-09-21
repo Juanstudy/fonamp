@@ -291,6 +291,48 @@ class PlayerManagerTest {
     }
 
     @Test
+    fun `restore keeps saved position for local`() = runTest {
+        val manager = FakePlayerManager()
+        val items = listOf(localItem("1"), localItem("2"))
+        manager.state.test {
+            awaitItem()
+            manager.restore(items, 1, 60_000L)
+            val restored = awaitItem()
+            assertEquals(items, restored.queue)
+            assertEquals(1, restored.index)
+            assertFalse(restored.isPlaying)
+            assertEquals(60_000L, restored.positionMs)
+        }
+    }
+
+    @Test
+    fun `restore forces zero position for live radio`() = runTest {
+        val manager = FakePlayerManager()
+        val station = radioItem("uuid-1")
+        manager.state.test {
+            awaitItem()
+            manager.restore(listOf(station), 0, 60_000L)
+            val restored = awaitItem()
+            assertTrue(restored.isLive)
+            assertFalse(restored.isPlaying)
+            assertEquals(0L, restored.positionMs)
+        }
+    }
+
+    @Test
+    fun `restore clamps out-of-range index`() = runTest {
+        val manager = FakePlayerManager()
+        val items = listOf(localItem("1"), localItem("2"))
+        manager.state.test {
+            awaitItem()
+            manager.restore(items, 99, 5_000L)
+            val restored = awaitItem()
+            assertEquals(1, restored.index)
+            assertEquals(5_000L, restored.positionMs)
+        }
+    }
+
+    @Test
     fun `queue store round-trips snapshot and clear lands idle`() {
         val store: QueueStore = InMemoryQueueStore()
         assertNull(store.load())

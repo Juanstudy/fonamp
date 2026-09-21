@@ -24,12 +24,16 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var themeDao: ThemeDao
 
+    @Inject
+    lateinit var queueRestorer: QueueRestorer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             FonampRoot(
                 player = player,
                 themeFlow = themeDao.observe(),
+                queueRestorer = queueRestorer,
             )
         }
     }

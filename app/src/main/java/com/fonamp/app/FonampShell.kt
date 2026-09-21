@@ -100,6 +100,7 @@ fun FonampRoot(
     player: PlayerManager,
     themeFlow: Flow<com.fonamp.core.database.ThemePref?>,
     version: String = BuildConfig.VERSION_NAME,
+    queueRestorer: QueueRestorer? = null,
 ) {
     val themePref by themeFlow.collectAsStateWithLifecycle(initialValue = null)
     val darkTheme = when (themePref?.mode ?: ThemeMode.SYSTEM) {
@@ -123,6 +124,12 @@ fun FonampRoot(
 
         // Notification gate: lazy on first playback, failure tolerated.
         RequestNotificationOnce(playerHasQueue = playerState.queue.isNotEmpty())
+
+        // Queue restore: one cold-start attempt installing the persisted
+        // snapshot as paused context (never auto-playing). Best-effort.
+        LaunchedEffect(Unit) {
+            runCatching { queueRestorer?.restoreOnce() }
+        }
 
         // In-app updates: one cold-start check (silent unless a newer release
         // is installable); manual re-checks live in Settings on their own
