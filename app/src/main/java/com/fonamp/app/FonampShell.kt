@@ -40,6 +40,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.fonamp.app.update.ApkInstaller
 import com.fonamp.core.database.ThemeDao
 import com.fonamp.core.database.ThemeMode
 import com.fonamp.core.permissions.AudioGateAction
@@ -61,6 +62,8 @@ import com.fonamp.feature.radio.FavoritesRoute
 import com.fonamp.feature.radio.RadioRouteScreen
 import com.fonamp.feature.radio.stationUuid
 import com.fonamp.feature.settings.SettingsRoute
+import com.fonamp.feature.settings.UpdateAvailableDialog
+import com.fonamp.feature.settings.UpdateUiState
 import com.fonamp.provider.api.BrowseQuery
 import kotlinx.coroutines.flow.Flow
 
@@ -119,6 +122,17 @@ fun FonampRoot(
 
         // Notification gate: lazy on first playback, failure tolerated.
         RequestNotificationOnce(playerHasQueue = playerState.queue.isNotEmpty())
+
+        // In-app updates: one cold-start check (silent unless a newer release
+        // is installable); manual re-checks live in Settings on their own
+        // entry instance converging on the same server truth.
+        val appContext = LocalContext.current.applicationContext
+        val installer = remember(appContext) { ApkInstaller(appContext) }
+        val updateHolder = hiltViewModel<UpdateHolderViewModel>()
+        val updateState by updateHolder.updates.state.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) {
+            updateHolder.updates.checkForUpdates(version)
+        }
 
         Scaffold(
             snackbarHost = { SnackbarHost(snackbar) },
@@ -211,6 +225,10 @@ fun FonampRoot(
                             viewModel = holder.settings,
                             snackbar = snackbar,
                             version = version,
+                            updates = holder.updates,
+                            onDownloadUpdate = { url, _ ->
+                                installer.enqueueUpdate(url, ApkInstaller.UPDATE_FILE_NAME)
+                            },
                         )
                     }
                 }
@@ -261,6 +279,19 @@ fun FonampRoot(
                     onClearSleepTimer = player::clearSleepTimer,
                 )
             }
+        }
+
+        val availableUpdate = updateState as? UpdateUiState.Available
+        if (availableUpdate != null) {
+            UpdateAvailableDialog(
+                tag = availableUpdate.tag,
+                notes = availableUpdate.notes,
+                onDownload = {
+                    installer.enqueueUpdate(availableUpdate.apkUrl, ApkInstaller.UPDATE_FILE_NAME)
+                    updateHolder.updates.dismiss()
+                },
+                onLater = { updateHolder.updates.dismiss() },
+            )
         }
     }
 }

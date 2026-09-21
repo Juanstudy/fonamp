@@ -99,6 +99,8 @@ class ApkInstaller(
     companion object {
         const val APK_MIME = "application/vnd.android.package-archive"
         const val UPDATES_DIR = "updates"
+        /** Constant file name: re-downloads overwrite, never accumulate. */
+        const val UPDATE_FILE_NAME = "fonamp-update.apk"
         const val NO_ID = -1L
         private const val PREFS_NAME = "in_app_updates"
         private const val KEY_DOWNLOAD_ID = "download_id"

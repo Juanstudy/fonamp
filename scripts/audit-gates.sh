@@ -45,8 +45,9 @@ else
   pass "no release APK present (gate applies when the release pipeline exists)";
 fi
 
-# 4. Manifest permission allowlist (v1 max set only)
-ALLOW="android.permission.READ_MEDIA_AUDIO android.permission.READ_EXTERNAL_STORAGE android.permission.INTERNET android.permission.FOREGROUND_SERVICE android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK android.permission.POST_NOTIFICATIONS"
+# 4. Manifest permission allowlist (audio + network + playback + notifications
+#    + package-install handoff for in-app updates; nothing else)
+ALLOW="android.permission.READ_MEDIA_AUDIO android.permission.READ_EXTERNAL_STORAGE android.permission.INTERNET android.permission.FOREGROUND_SERVICE android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK android.permission.POST_NOTIFICATIONS android.permission.REQUEST_INSTALL_PACKAGES"
 DECLARED=$(grep -rhoE 'android:name="android\.permission\.[A-Z_]+"' "$ROOT/app/src/main/AndroidManifest.xml" "$ROOT"/core/*/src/main/AndroidManifest.xml "$ROOT"/provider/*/src/main/AndroidManifest.xml "$ROOT"/feature/*/src/main/AndroidManifest.xml 2>/dev/null | grep -oE 'android\.permission\.[A-Z_]+' | sort -u || true)
 if [ -z "$DECLARED" ]; then
   fail "no permissions declared in manifests"

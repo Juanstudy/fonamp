@@ -27,7 +27,6 @@ data class GithubRelease(
  */
 class GithubReleasesClient(
     baseUrl: String = API_BASE_URL,
-    okHttp: OkHttpClient? = null,
     connectTimeoutMs: Long = RadioBrowserClient.CONNECT_TIMEOUT_MS,
     readTimeoutMs: Long = RadioBrowserClient.READ_TIMEOUT_MS,
     callTimeoutMs: Long = RadioBrowserClient.CALL_TIMEOUT_MS,
@@ -36,7 +35,7 @@ class GithubReleasesClient(
     private val service: GithubReleasesApi = Retrofit.Builder()
         .baseUrl(if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/")
         .client(
-            okHttp ?: OkHttpClient.Builder()
+            OkHttpClient.Builder()
                 .connectTimeout(connectTimeoutMs, TimeUnit.MILLISECONDS)
                 .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
                 .callTimeout(callTimeoutMs, TimeUnit.MILLISECONDS)
