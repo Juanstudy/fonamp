@@ -3,6 +3,8 @@
 Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Changed / Fixed` por versión. Cada release de GitHub lleva además 3-5 bullets en lenguaje de usuario.
 
 ## [Unreleased]
+
+## [0.0.11] — 2026-09-21
 ### Added
 - Controles de reproducción en la sheet: velocidad cíclica, shuffle y repeat (off/all/one).
 
