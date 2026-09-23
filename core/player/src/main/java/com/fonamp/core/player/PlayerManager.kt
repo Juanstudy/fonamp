@@ -32,6 +32,14 @@ interface PlayerManager {
      */
     fun restore(items: List<MediaItem>, index: Int, positionMs: Long = 0L)
 
+    /**
+     * Jump to [index] within the current queue and start playback there.
+     * Clamped into range; no-op on an empty queue or when [index] is
+     * already current. Unlike [play], this keeps the current context:
+     * sleep timer and error banner are preserved.
+     */
+    fun playAt(index: Int)
+
     /** Convenience for one-tap radio/local play. */
     fun playSingle(item: MediaItem) = play(listOf(item), 0)
 

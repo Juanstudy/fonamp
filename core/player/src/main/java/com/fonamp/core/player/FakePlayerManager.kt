@@ -138,6 +138,28 @@ class FakePlayerManager : PlayerManager {
         }
     }
 
+    override fun playAt(index: Int) {
+        _state.update { current ->
+            if (current.queue.isEmpty()) {
+                current
+            } else {
+                val safeIndex = index.coerceIn(current.queue.indices)
+                if (safeIndex == current.index) {
+                    current
+                } else {
+                    // copy preserves sleep timer and banner (same context).
+                    current.copy(
+                        index = safeIndex,
+                        isPlaying = true,
+                        isLive = current.queue[safeIndex].isLive(),
+                        icyTitle = null,
+                        positionMs = 0L,
+                    )
+                }
+            }
+        }
+    }
+
     override fun seekTo(positionMs: Long) {
         _state.update { current ->
             if (current.queue.isEmpty() || current.isLive) current

@@ -240,6 +240,30 @@ class DefaultPlayerManager @Inject constructor(
         }
     }
 
+    override fun playAt(index: Int) {
+        val current = _state.value
+        if (current.queue.isEmpty()) return
+        val safeIndex = index.coerceIn(current.queue.indices)
+        if (safeIndex == current.index) return
+        // Same-context jump: the timer was armed for this queue, so it
+        // survives (unlike play/restore, which start a fresh context).
+        // The banner is preserved via copy, same as next/prev.
+        _state.update {
+            it.copy(
+                index = safeIndex,
+                isPlaying = true,
+                isLive = current.queue[safeIndex].isLive(),
+                icyTitle = null,
+                positionMs = 0L,
+            )
+        }
+        controller?.let {
+            it.seekTo(safeIndex, 0L)
+            it.prepare()
+            it.play()
+        } ?: connect()
+    }
+
     override fun seekTo(positionMs: Long) {
         val current = _state.value
         if (current.queue.isEmpty() || current.isLive) return
