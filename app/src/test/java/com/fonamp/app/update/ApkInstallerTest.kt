@@ -46,6 +46,7 @@ class ApkInstallerTest {
     @Test
     fun `install missing file returns false`() {
         val installer = installer()
+        assertNull(installer.installIntent(File("/nonexistent/fonamp.apk")))
         assertFalse(installer.installNow(File("/nonexistent/fonamp.apk")))
     }
 

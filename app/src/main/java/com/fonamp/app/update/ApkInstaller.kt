@@ -17,8 +17,10 @@ import java.io.File
  *   download outliving the process is still recognized on next launch.
  * - [finishedDownload] resolves the tracked download to a file only when
  *   the system reports it successful — anything else is "not ready".
- * - [installNow] opens the platform installer; Android always confirms
- *   with the user, silent install is not possible by design.
+ * - [installIntent] builds the platform installer intent; [installNow]
+ *   fires it for foreground flows. Background flows (the download-complete
+ *   receiver) must NOT start it directly — background activity starts are
+ *   blocked since Android 10 — they post it as a notification tap instead.
  */
 class ApkInstaller(
     private val appContext: Context,
@@ -61,20 +63,34 @@ class ApkInstaller(
     }
 
     /**
-     * Open the system installer for [apkFile]. Returns false when the file
-     * is missing or nothing handles the install intent (unknown sources
-     * locked down with no handler) — callers surface that, never crash.
+     * Installer intent for [apkFile], null when the file is missing or the
+     * FileProvider cannot serve it. Shared by [installNow] and the
+     * completion notification (whose tap fires it directly — allowed even
+     * from background, unlike a receiver-started activity).
      */
-    fun installNow(apkFile: File): Boolean {
-        if (!apkFile.exists()) return false
-        val uri = FileProvider.getUriForFile(
-            appContext,
-            "${appContext.packageName}.fileprovider",
-            apkFile,
-        )
-        val intent = Intent(Intent.ACTION_VIEW)
+    fun installIntent(apkFile: File): Intent? {
+        if (!apkFile.exists()) return null
+        val uri = runCatching {
+            FileProvider.getUriForFile(
+                appContext,
+                "${appContext.packageName}.fileprovider",
+                apkFile,
+            )
+        }.getOrNull() ?: return null
+        return Intent(Intent.ACTION_VIEW)
             .setDataAndType(uri, APK_MIME)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    /**
+     * Open the system installer for [apkFile]. Returns false when the file
+     * is missing, unservable, or nothing handles the install intent
+     * (unknown sources locked down with no handler) — callers surface
+     * that, never crash. Foreground flows only; Android always confirms
+     * with the user, silent install is not possible by design.
+     */
+    fun installNow(apkFile: File): Boolean {
+        val intent = installIntent(apkFile) ?: return false
         return try {
             appContext.startActivity(intent)
             true
