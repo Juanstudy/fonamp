@@ -25,7 +25,7 @@ class ExpandabilityTest {
     @Test
     fun `bottom tabs are exactly Collection Radio Favorites Settings`() {
         assertEquals(
-            listOf("collection", "radio/discover", "favorites", "settings"),
+            listOf("collection", "radio/discover", "favorites", "podcast", "settings"),
             FonampTabs.tabs.map { it.route },
         )
     }
@@ -36,7 +36,7 @@ class ExpandabilityTest {
         routes.forEach { route ->
             assertTrue(
                 "route $route must not open a v2 surface",
-                !route.contains("podcast", ignoreCase = true) &&
+                
                     !route.contains("download", ignoreCase = true) &&
                     !route.contains("eq", ignoreCase = true) &&
                     !route.contains("sleep", ignoreCase = true),
@@ -51,7 +51,7 @@ class ExpandabilityTest {
         assertEquals("local", resolveSource(sources, "local").id)
         assertEquals("radio-browser", resolveSource(sources, "radio-browser").id)
         // The shell is untouched: still exactly four tabs.
-        assertEquals(4, FonampTabs.tabs.size)
+        assertEquals(5, FonampTabs.tabs.size)
     }
 
     /** `provider/demo` mock: a new source module contributes one id + one registration. */

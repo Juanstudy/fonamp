@@ -5,4 +5,5 @@ data class BrowseQuery(
     val country: String? = null,
     val genre: String? = null,
     val tag: String? = null,
+    val feedUrl: String? = null,
 )

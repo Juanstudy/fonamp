@@ -74,6 +74,7 @@ The last recorded size measurement in repository documentation is **7.3 MB on 20
 ## Versioning and release workflow
 
 - `app/build.gradle.kts` is the source of truth for `versionCode` and `versionName`.
+- For multi-stage features, large ODD plans, or ANY change exceeding 400 lines, never submit a single massive PR. Use **chained PRs** (e.g., `feat/feature-core` -> `feat/feature-ui` -> `chore/feature-release`). Chained PRs are strictly about making changes understandable for the reviewer, not aesthetics. This applies regardless of whether it is a critical feature or a documentation update.
 - Keep the feature commit focused; put the version bump in a separate `chore: bump to X.Y.Z (versionCode N)` work unit when that is the accepted workflow.
 - The bump updates the current version in this file and `README.md` in the same work unit.
 - Create annotated tags: `git tag -a vX.Y.Z -m "fonamp X.Y.Z"`.
