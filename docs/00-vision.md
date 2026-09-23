@@ -32,7 +32,7 @@ Listeners often juggle separate apps for local music, radio, podcasts, and downl
 | Radio | **Shipped:** directory discovery, 24-hour cache, curated tiles, name search, favorites, artwork | Improve resilience and discovery UX |
 | Player | **Shipped:** background playback, seek, next/previous, Up next, shuffle/repeat/speed, sleep timer, best-effort restore | Source-specific enhancements and richer queue policy |
 | Settings | **Shipped:** theme, directory-cache stats/clear, About, GitHub update check | Total storage reporting, richer cache controls |
-| Podcasts | **Planned** | Directory, subscriptions, episodes, offline playback |
+| Podcasts | **Current** | Directory, subscriptions, episodes (online playback only) |
 | Downloads | **Planned** | URL downloads, retry queue, watched folders |
 | External providers | **Planned** | Self-hosted providers first; evaluate public services separately |
 | Advanced customization | **Planned** | Tab order, EQ, richer behavior settings |

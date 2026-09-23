@@ -8,7 +8,7 @@ Fonamp is a native Android music and radio player built with Kotlin, Jetpack Com
 - SDK: `minSdk 29`, `compileSdk 35`, `targetSdk 35`
 - Toolchain: JDK 17 (Corretto in CI), Gradle 8.10, AGP 8.7.x
 - Current release: `0.0.13` (`versionCode 13`) from `app/build.gradle.kts`
-- Current modules: `:app`, five `:core:*`, three `:provider:*`, and three `:feature:*` modules
+- Current modules: `:app`, five `:core:*`, four `:provider:*`, and four `:feature:*` modules
 
 ## Mandatory documentation contract
 
@@ -38,6 +38,8 @@ provider/local        MediaStore source
 feature/library      Collection UI and state
 feature/radio        Discover, station, search, and favorites UI/state
 feature/settings     theme, directory cache, About, and update-check UI/state
+provider/podcast       iTunes Search API client and RSS parser
+feature/podcast        Podcast Discover, Search, Episode List, and Subscription UI
 ```
 
 Dependency rules:

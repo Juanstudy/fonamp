@@ -9,7 +9,7 @@
 <p align="center">
   <a href="https://github.com/Juanstudy/fonamp/actions/workflows/android.yml"><img src="https://img.shields.io/github/actions/workflow/status/Juanstudy/fonamp/android.yml?label=build" alt="CI build status"></a>
   <a href="https://github.com/Juanstudy/fonamp/releases"><img src="https://img.shields.io/github/v/release/Juanstudy/fonamp?label=release" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/version-0.0.13-blue" alt="Current version 0.0.13">
+  <img src="https://img.shields.io/badge/version-0.0.14-blue" alt="Current version 0.0.14">
   <img src="https://img.shields.io/badge/minSdk-29-blue" alt="minSdk 29">
   <img src="https://img.shields.io/badge/targetSdk-35-blue" alt="targetSdk 35">
 </p>
@@ -17,9 +17,9 @@
 **fonamp** is a lightweight native Android player for an on-device MediaStore library and internet radio from RadioBrowser. It has no ads, trackers, analytics, or Firebase.
 
 > [!NOTE]
-> Current source and tag: **v0.0.13**. Releases are signed direct-install APKs for internal testing, not Play Store builds. See [CHANGELOG.md](./CHANGELOG.md) for shipped behavior by version.
+> Current source and tag: **v0.0.14**. Releases are signed direct-install APKs for internal testing, not Play Store builds. See [CHANGELOG.md](./CHANGELOG.md) for shipped behavior by version.
 
-## Shipped through v0.0.13
+## Shipped through v0.0.14
 
 | Area | Current behavior |
 | ---- | ---------------- |
@@ -37,7 +37,7 @@
   <img src="./assets/readme/screenshot.jpeg" width="360" alt="fonamp on a real device: Discover radio, Library songs, and the Now-Playing sheet with progress slider and transport controls">
 </p>
 
-*Historical real-device capture from v0.0.7. It does not show every feature added through v0.0.13.*
+*Historical real-device capture from v0.0.7. It does not show every feature added through v0.0.14.*
 
 ## Release and build facts
 
