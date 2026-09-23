@@ -31,7 +31,7 @@ Documentation files listed in Scope. No application source changes.
 - [x] **DOC-2** — Updated current OpenSpec requirements to match shipped behavior and current architecture.
 - [x] **DOC-3** — Added the documentation review/update contract to `AGENTS.md` and corrected release/permission guidance.
 - [x] **DOC-4** — Verified cross-document consistency, links, version references, and diff scope.
-- [ ] **DOC-5** — Parent will create the work-unit commit after reviewing this documentation-only diff.
+- [x] **DOC-5** — Created the work-unit commit `6723366` after reviewing the documentation-only diff.
 
 ## Completion evidence
 
@@ -48,4 +48,4 @@ Documentation files listed in Scope. No application source changes.
 - Archive check: `git diff --name-only -- openspec/changes/archive/` returned no files.
 - Known-stale-claim search over current docs/specs: no unexpected stale claims remained. Intentional historical references are the v0.0.7 screenshot label and the recorded v0.0.5 debug-size history.
 - Local Markdown link check: PASS across 17 scoped files.
-- Final `git diff --check` and `git status --short` are recorded in the parent handoff after this task file is updated.
+- Final `git diff --check` and `git status --short` were verified after the documentation work-unit commit.
