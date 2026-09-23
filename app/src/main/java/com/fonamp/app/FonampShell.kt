@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -70,6 +71,7 @@ import com.fonamp.feature.settings.UpdateAvailableDialog
 import com.fonamp.feature.settings.UpdateUiState
 import com.fonamp.provider.api.BrowseQuery
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -117,6 +119,7 @@ fun FonampRoot(
         val navController = rememberNavController()
         val playerState by player.state.collectAsStateWithLifecycle()
         val snackbar = remember { SnackbarHostState() }
+        val downloadScope = rememberCoroutineScope()
         var showSheet by rememberSaveable { mutableStateOf(false) }
         var miniDismissed by rememberSaveable { mutableStateOf(false) }
 
@@ -251,6 +254,9 @@ fun FonampRoot(
                             updates = holder.updates,
                             onDownloadUpdate = { url, _ ->
                                 installer.enqueueUpdate(url, ApkInstaller.UPDATE_FILE_NAME)
+                                downloadScope.launch {
+                                    snackbar.showSnackbar(DOWNLOAD_STARTED_MESSAGE)
+                                }
                             },
                         )
                     }
@@ -319,6 +325,9 @@ fun FonampRoot(
                 onDownload = {
                     installer.enqueueUpdate(availableUpdate.apkUrl, ApkInstaller.UPDATE_FILE_NAME)
                     updateHolder.updates.dismiss()
+                    downloadScope.launch {
+                        snackbar.showSnackbar(DOWNLOAD_STARTED_MESSAGE)
+                    }
                 },
                 onLater = { updateHolder.updates.dismiss() },
             )
@@ -449,8 +458,11 @@ private fun parseFilter(filter: String): Pair<BrowseQuery, String>? {
     }
 }
 
-/** Re-offer for a stranded ready apk (UP-2 cold-start pickup). */
-@Composable
+/** Snackbar confirmation when an update download starts (UP-3). */
+private const val DOWNLOAD_STARTED_MESSAGE =
+    "Downloading update — we'll notify you when it's ready."
+
+/** Re-offer for a stranded ready apk (UP-2 cold-start pickup). */@Composable
 private fun UpdateReadyDialog(
     onInstall: () -> Unit,
     onLater: () -> Unit,
