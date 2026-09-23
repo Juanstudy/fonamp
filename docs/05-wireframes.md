@@ -1,120 +1,161 @@
-# Fonamp — Wireframes (v1)
+# Fonamp — Shipped Wireframes
 
-> Status: draft · Text wireframes for review before any UI code · Last updated: 2026-09-10
-> Notation: `[x]` button/action, `(...)` placeholder content, `~~~` scrollable list.
+> Status: current through v0.0.13 · Updated: 2026-09-23
+> Notation: `[x]` action/button, `(...)` content, `~~~` scrollable content.
 
-## 0. Global chrome
-- Bottom tabs (v1): Collection | Radio | Favorites | Settings. (Podcasts/Downloads hidden until their slice.)
-- Mini-player docks above bottom tabs on every tab whenever audio plays or pauses.
-- Top app bar per tab: screen title + contextual actions (search/filter).
+## Global chrome
 
-## 1. Collection (home)
-```
+- Bottom tabs: **Collection | Radio | Favorites | Settings**.
+- The mini-player appears above the tabs while audio is playing or paused.
+- A missing or failed artwork URI falls back to a generic icon.
+- Closing the mini-player or sheet dismisses the chrome without clearing the queue.
+
+## Collection
+
+```text
 ┌─────────────────────────────┐
-│ Fonamp            [search]  │  ← top bar
+│ Collection          [search]│
 ├─────────────────────────────┤
-│ Songs | Artists | Albums    │  ← segmented tabs
+│ Songs | Artists | Albums    │
 ├─────────────────────────────┤
 │ ~~~ song rows ~~~~~~~~~~~~~ │
-│ ▶ Title — Artist      3:42 │  ← tap = play w/ queue
-│ ▶ Title — Artist      4:01 │
+│ [art] Title — Artist   3:42 │
+│ [art] Title — Artist   4:01 │
 │ ...                         │
 ├─────────────────────────────┤
-│ ♪ mini-player (if playing)  │
+│ ♪ mini-player, if present  │
 ├─────────────────────────────┤
-│ Collection Radio ♥Fav ⚙Set │
+│ Collection Radio ♥Favorites │
+│                    Settings │
 └─────────────────────────────┘
 ```
-- First run: permission sheet → granted: list; denied: Denied state (see §6).
-- Empty (no audio files): Empty state + "how to add music" hint.
 
-## 2. Radio — Discover index
-```
+- Search filters the current local song list by title, artist, or album.
+- First entry requests audio permission; denied and no-audio states remain designed.
+- Tapping a song starts the visible filtered queue at that index.
+
+## Radio — Discover
+
+```text
 ┌─────────────────────────────┐
-│ Radio              [↻]      │  ← ↻ = pull/refresh directory
+│ Curadas             [radio] │
+│ [Lofi] [Chill] [Ambient]    │
 ├─────────────────────────────┤
-│ [filter country/genre...]   │
-├─────────────────────────────┤
-│ Countries | Genres & tags   │  ← segmented
-├─────────────────────────────┤
+│ [Filter countries or tags]  │ [refresh]
+│ Countries | Genres & tags   │
 │ ~~~ index rows ~~~~~~~~~~~~ │
-│ 🇦🇷 Argentina        1.2k  │  ← tap = station list
-│ 🇩🇪 Germany          3.4k  │
-│ ...                         │
+│ Country / tag · station count│
 ├─────────────────────────────┤
-│ ♪ mini-player (if playing)  │
+│ Search results              │
+│ [art] Station  128k [♡]     │
+│ [art] Station   64k [♡]     │
+│ loading / empty / [retry]   │
 ├─────────────────────────────┤
-│ tabs...                     │
+│ ♪ mini-player, if present  │
+├─────────────────────────────┤
+│ Collection Radio ♥Favorites │
+│                    Settings │
 └─────────────────────────────┘
 ```
-- Offline / fetch fail: Offline card with [retry] (cached index shown if available).
 
-## 3. Radio — Station list
-```
+- The filter narrows the local index immediately.
+- Queries of two or more characters also trigger a debounced RadioBrowser name search.
+- Curated tiles and station rows use the standard play/favorite path and station artwork.
+- Offline/failure states preserve usable cached or index content where available.
+
+## Radio — Station list
+
+```text
 ┌─────────────────────────────┐
-│ ← Argentina                 │
+│ [back] Country or tag [radio]│ [refresh]
 ├─────────────────────────────┤
-│ ~~~ station rows ~~~~~~~~~~ │
-│ ▶ Radio Mitre    128k [♡] │  ← tap plays, ♡ saves
-│ ▶ La 100         64k  [♥] │
+│ [art] Station       128k [♡] │
+│ [art] Station        64k [♡] │
 │ ...                         │
 └─────────────────────────────┘
 ```
 
-## 4. Favorites
-```
+- Bitrate and codec appear only when supplied by the directory.
+- Tapping the row plays; the heart updates Room favorites.
+
+## Favorites
+
+```text
 ┌─────────────────────────────┐
 │ Favorites                   │
 ├─────────────────────────────┤
-│ ~~~ saved stations ~~~~~~~~ │
-│ ▶ Name  country [▶][x]     │  ← play / remove (undo snackbar)
+│ [art] Station      country   │
+│                    [play][x]│
 │ ...                         │
-│ (empty: "No favorites yet — │
-│  tap ♡ on any station")     │
+├─────────────────────────────┤
+│ Removed Station     [Undo]  │
 └─────────────────────────────┘
 ```
 
-## 5. Settings
-```
+## Settings
+
+```text
 ┌─────────────────────────────┐
 │ Settings                    │
 ├─────────────────────────────┤
 │ Appearance                  │
-│   Theme: (System|Light|Dark)│
+│  ◉ System default           │
+│  ○ Light                    │
+│  ○ Dark                      │
+├─────────────────────────────┤
 │ Storage                     │
-│   Directory cache   [clear] │
-│   Used: 12 MB               │
+│ Directory cache: entries, B │
+│ [Clear directory cache]     │
+├─────────────────────────────┤
 │ About                       │
-│   Version, licenses, source │
+│ Fonamp 0.0.13                │
+│ License pointer, sources     │
+│ [Check for updates]          │
 └─────────────────────────────┘
 ```
 
-## 6. Player — mini + sheet
-```
+- Clear reports the freed cache bytes; Room data is not cleared.
+- Settings reports directory-cache usage, not total app-storage usage.
+- Update Download and Later are separate actions.
+
+## Player — mini and full sheet
+
+```text
 mini: ┌───────────────────────────┐
-      │ [art] Title — Artist  [⏸] │  ← tap expands, ⏸ toggles
+      │ [art] Title       source │
+      │      Subtitle      [▶/⏸]│ [x]
       └───────────────────────────┘
+
 sheet:
 ┌─────────────────────────────┐
-│  (drag handle)        [x]   │
-│                             │
-│         [artwork]           │  ← generic icon in v1
-│      Title                  │
-│      Artist · source badge  │  ← [radio] / [local]
-│      ICY metadata (radio)   │
-│  ◀◀  [⏸]  ▶▶  + [♡]       │  ← radio: play/stop only
-│  ─────●────────  1:12/3:42 │  ← local only (seek)
-│  ⚠ stream error [retry]    │  ← only on failure
+│ [radio/local]          [x]   │
+│          [artwork]           │
+│ Title                        │
+│ Artist/station · ICY         │
+│ ⚠ stream error        [retry]│
+│ ─────●──────  1:12 / 3:42    │ ← local seek only
+│ shuffle [prev] [play] [next] │
+│ repeat [speed] [sleep] [heart]│
+│ Up next                      │
+│ [art] next title             │
+│ [art] next title             │
 └─────────────────────────────┘
 ```
 
-## 7. Shared states (one component each)
-- **Loading**: shimmer rows (never blank).
-- **Empty**: icon + 1-line why + action (e.g. "No favorites yet").
-- **Offline**: icon + "No connection" + [retry] (+ cached content if any).
-- **Denied** (permission): icon + why-needed text + [grant again].
-- **Error** (stream): banner in player + toast-free inline message + [retry].
+- The queue section is shown for a non-empty multi-item context.
+- Radio omits seek and uses stop rather than pause.
+- Sleep presets: 5, 10, 15, 30, 45, 60 minutes, plus Off.
+- Speed cycles 1×, 1.25×, 1.5×, 1.75×, 2×, 0.5×, and 0.75×.
+- Repeat cycles Off → All → One → Off.
 
-## 8. Explicitly NOT in v1 wireframes
-Podcasts/Downloads tabs, EQ screen, tab editor, sleep timer UI, widgets, Auto.
-(Placeholders for hidden tabs: none — tabs simply absent.)
+## Shared states
+
+- **Loading:** visible rows/progress, never a blank screen
+- **Empty:** explanation and useful next action
+- **Offline:** cached content when available plus retry
+- **Denied:** why audio access is needed plus re-request/settings path
+- **Error:** inline explanation and retry
+
+## Not shipped
+
+Podcast/Download tabs, EQ, tab editor, total-storage management, artwork-cache controls, widgets, and Android Auto do not belong in current wireframes.

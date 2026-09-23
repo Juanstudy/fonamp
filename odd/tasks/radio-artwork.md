@@ -25,7 +25,11 @@ El artwork mejora la experiencia de usuario y el reconocimiento de las estacione
 Módulos: `core/network`, `core/database`, `provider/api`, `provider/radio`, `feature/radio`.
 
 ## Tasks
-- [ ] **T1** — DTOs y mapping. Modificar `StationDto` (`core/network`), `AudioItem` map (`RadioViewModel.kt`/`RadioBrowserSource.kt`), y `radioMediaItem` (`provider/api/MediaItems.kt`).
-- [ ] **T2** — Persistencia en Favoritos. Añadir `artworkUri` a `FavoriteStation` (`core/database`), su mapeo en `FavoritesViewModel.kt`, y escribir migración de Room.
-- [ ] **T3** — UI con Coil. Reemplazar `Icon(AppIcons.Radio)` por un componente (ej: `RadioArtwork`) basado en `AsyncImage` en todas las listas de `RadioScreens.kt`.
-- [ ] **T4** — Verificación final. `gradlew test` y `assembleDebug`.
+- [x] **T1** — DTOs and mapping. `StationDto`, provider `AudioItem` mapping, and `radioMediaItem` now carry the RadioBrowser favicon into Media3 metadata.
+- [x] **T2** — Favorite persistence. `FavoriteStation` stores `artworkUri` and Room schema migration v1 → v2 preserves it.
+- [x] **T3** — Coil UI. Discover, search, station, favorites, curated surfaces, and player metadata use remote artwork with generic fallback.
+- [x] **T4** — Final verification. Unit tests, debug build, release v0.0.13, and documentation review completed.
+
+## Completion evidence
+- Shipped in release v0.0.13.
+- Current documentation and canonical specs are synchronized in `odd/tasks/documentation-sync.md`.

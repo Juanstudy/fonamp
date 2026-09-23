@@ -9,15 +9,27 @@
 <p align="center">
   <a href="https://github.com/Juanstudy/fonamp/actions/workflows/android.yml"><img src="https://img.shields.io/github/actions/workflow/status/Juanstudy/fonamp/android.yml?label=build" alt="CI build status"></a>
   <a href="https://github.com/Juanstudy/fonamp/releases"><img src="https://img.shields.io/github/v/release/Juanstudy/fonamp?label=release" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/version-0.0.13-blue" alt="Current version 0.0.13">
   <img src="https://img.shields.io/badge/minSdk-29-blue" alt="minSdk 29">
   <img src="https://img.shields.io/badge/targetSdk-35-blue" alt="targetSdk 35">
-  <img src="https://img.shields.io/badge/APK-7.3_MB-green" alt="Release APK 7.3 MB">
 </p>
 
-**fonamp** is a lightweight native Android music player: your on-device library (MediaStore) and internet radio (RadioBrowser) in one fast, tiny app — with curated Lofi/Chill/Ambient tiles for instant listening. No ads, no trackers, no Firebase.
+**fonamp** is a lightweight native Android player for an on-device MediaStore library and internet radio from RadioBrowser. It has no ads, trackers, analytics, or Firebase.
 
 > [!NOTE]
-> fonamp is in internal testing (v0.0.7). Releases ship a signed APK for direct install — not via Play Store yet. See [CHANGELOG.md](./CHANGELOG.md) for what each version brings.
+> Current source and tag: **v0.0.13**. Releases are signed direct-install APKs for internal testing, not Play Store builds. See [CHANGELOG.md](./CHANGELOG.md) for shipped behavior by version.
+
+## Shipped through v0.0.13
+
+| Area | Current behavior |
+| ---- | ---------------- |
+| Local music | Songs, artists, and albums from MediaStore; local title/artist/album search; Coil album artwork |
+| Radio | Country and genre/tag discovery, 24-hour cache, curated Lofi/Chill/Ambient tiles, debounced station-name search, Room favorites |
+| Artwork | Local album art and RadioBrowser favicons with generic fallbacks in lists, mini-player, and full player sheet |
+| Playback | One Media3 background player, local seek/next/previous, visible **Up next** queue, shuffle, repeat, playback speed, and a one-shot sleep timer |
+| Continuity | Best-effort queue and position restore after process death, restored paused rather than auto-playing |
+| Updates | Cold-start/manual GitHub release checks, APK download, completion notification, and system-installer handoff |
+| Privacy | Seven-permission allowlist enforced in CI; no prohibited ad, analytics, crash, or Firebase SDKs |
 
 ## Screenshots
 
@@ -25,55 +37,40 @@
   <img src="./assets/readme/screenshot.jpeg" width="360" alt="fonamp on a real device: Discover radio, Library songs, and the Now-Playing sheet with progress slider and transport controls">
 </p>
 
-*Real device capture (v0.0.7): Discover radio, Library, and Now-Playing with the new progress slider.*
+*Historical real-device capture from v0.0.7. It does not show every feature added through v0.0.13.*
 
-## Why fonamp
+## Release and build facts
 
-| Need | What you get |
-| ---- | ------------ |
-| Local music | Browse songs, albums, and artists from MediaStore, with Coil-loaded artwork and a fast mini-player |
-| Internet radio | Search and play RadioBrowser stations, favorite them into a Room database |
-| Instant mood | Curated Lofi / Chill / Ambient tiles with the same play + favorite flow |
-| Privacy | Zero ads, zero trackers, zero Firebase — verified by CI on every push |
+- The tag-triggered release workflow builds a **signed**, R8-optimized and resource-shrunk APK.
+- The hard release gate is **<40 MB**. The last recorded measurement is **7.3 MB on 2026-09-12**; re-measure before quoting a current size.
+- Debug builds stay unminified and are monitored rather than subject to the hard release-size gate.
+- The manifest allowlist is `READ_MEDIA_AUDIO`, `READ_EXTERNAL_STORAGE` through API 32, `INTERNET`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS`, and `REQUEST_INSTALL_PACKAGES` for update installation.
 
-## Proof, not promises
-
-- **7.3 MB signed release APK** (R8 + shrink; debug is ~34 MB and intentionally unminified for speed).
-- **6-permission allowlist**, enforced in CI: `READ_MEDIA_AUDIO`, `READ_EXTERNAL_STORAGE`, `INTERNET`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS`.
-- **CI gates on every push**: toolchain audit (12 modules, pins, SDKs) → unit tests → debug APK → tracker/permission/size audits.
-
-> [!TIP]
-> The release gate fails the build if the APK ever exceeds 40 MB.
-
-## How it is wired
+## Architecture
 
 <p align="center">
   <img src="./assets/readme/architecture.svg" width="100%" alt="Module map: the app shell hosts library, radio, and settings features over local, API, and radio providers and player, network, database, permissions, and UI core modules">
 </p>
 
-One `app` shell (navigation, Hilt DI, Media3 session) hosts three features — `library`, `radio`, `settings` — over `provider:local/api/radio` sources and `core:player/network/database/permissions/ui`. Playback runs through Media3 with a foreground service; favorites and theme live in Room.
+One `app` shell wires navigation, Hilt, Media3, queue restore, and update installation. It hosts `feature/library`, `feature/radio`, and `feature/settings` over `provider/local`, `provider/api`, and `provider/radio`, with shared infrastructure in the five `core/*` modules. Favorites and theme are stored in Room; the radio directory uses a 24-hour file cache.
 
 ## Get it
 
-**Quick path (users):**
+**Users**
 
 1. Open [GitHub Releases](https://github.com/Juanstudy/fonamp/releases).
-2. Download `fonamp-<tag>.apk` (signed release, internal testing).
-3. Install on Android 10+ (SDK 29) and grant media + notification permissions.
+2. Download `fonamp-<tag>.apk`.
+3. Install on Android 10+ and allow the requested media/notification access.
 
-**Quick path (developers):**
+**Developers**
 
-1. Requirements: JDK 17, Android SDK (compile/target 35).
-2. `./gradlew installDebug` — builds and installs the debug APK.
-3. `./gradlew test` — runs the unit-test gate; `./scripts/audit-gates.sh` runs the tracker/permission/size audits.
+```bash
+./gradlew installDebug
+./gradlew test
+./scripts/audit-toolchain.sh
+./scripts/audit-gates.sh
+```
 
-## Compatibility
+## Planned, not shipped
 
-| Item | Value |
-| ---- | ----- |
-| minSdk / targetSdk | 29 (Android 10) / 35 |
-| JDK / language | 17 (Corretto in CI) / Kotlin |
-| UI / playback / DI | Jetpack Compose / Media3 / Hilt |
-| Images / storage | Coil / Room |
-
-More detail: [CHANGELOG.md](./CHANGELOG.md) tracks every version; `docs/` holds deeper notes.
+Podcasts, URL downloads/work queues, external music providers, tab customization, EQ, widgets, Android Auto, and public-store distribution remain roadmap work. They are not current app surfaces.

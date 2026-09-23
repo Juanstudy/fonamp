@@ -1,59 +1,92 @@
 # Changelog — fonamp
 
-Formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/): `Added / Changed / Fixed` por versión. Cada release de GitHub lleva además 3-5 bullets en lenguaje de usuario.
+This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Release notes are curated separately for users; this file is the technical shipping record.
 
 ## [Unreleased]
 
-## [0.0.11] — 2026-09-21
+### Changed
+- Synchronized current documentation with shipped behavior through v0.0.13 and separated future roadmap work from current product claims.
+
+## [0.0.13] — 2026-09-23
+
 ### Added
-- Controles de reproducción en la sheet: velocidad cíclica, shuffle y repeat (off/all/one).
+- Radio station artwork from RadioBrowser favicons across Discover, search results, station lists, Favorites, and the player, with generic fallbacks.
+- A visible **Up next** queue in the player sheet; selecting a row jumps to that queue item.
+
+### Changed
+- FavoriteStation now persists `artworkUri` through Room schema migration v1 → v2.
+
+## [0.0.12] — 2026-09-23
+
+### Added
+- Best-effort queue and playback-position restore after process death. Restored playback starts paused, never phantom-playing.
+
+### Fixed
+- In-app update installation now signals completed and failed downloads through notifications, re-offers a ready APK at the next launch, and confirms when a download starts.
+
+## [0.0.11] — 2026-09-21
+
+### Added
+- Player-sheet playback speed, shuffle, and repeat controls (off/all/one).
 
 ## [0.0.10] — 2026-09-21
+
 ### Added
-- Actualización in-app: al abrir revisa GitHub Releases y ofrece descargar/instalar la versión nueva.
+- In-app GitHub release check with download and system-installer handoff.
 
 ## [0.0.9] — 2026-09-20
+
 ### Added
-- Sleep timer en la sheet: presets 5/10/15/30/45/60 min + Off, detiene la reproducción una vez sin permiso nuevo.
+- One-shot sleep timer with 5/10/15/30/45/60-minute presets and Off.
 
 ## [0.0.8] — 2026-09-20
+
 ### Added
-- Búsqueda de emisoras por nombre integrada al filtro de Discover: debounce con consulta `byname` al directorio, sección de resultados con play + favorito idénticos, estados vacía/error con retry.
-- Screenshot real del dispositivo con controles del reproductor en el README.
+- Debounced RadioBrowser station-name search integrated into the Discover filter, including empty/error/retry states and normal play/favorite behavior.
+- Real-device screenshot with player controls in the README.
+
 ### Fixed
-- La X del mini-reproductor ahora lo cierra sin limpiar la cola (cierra #8).
-- Versión en About leída desde BuildConfig en vez de `0.1.0` hardcodeado.
+- Closing the mini-player no longer clears the queue (issue #8).
+- About reads the version from `BuildConfig` instead of a hardcoded value.
 
 ## [0.0.7] — 2026-09-19
+
 ### Added
-- Controles completos en PlayerSheet: slider de progreso con tiempos transcurrido/total y botones anterior/siguiente (cierra #5).
+- Player-sheet progress slider, elapsed/total time, and previous/next controls (issue #5).
+
 ### Fixed
-- Reproducción offline de archivos locales que fallaba al instante (cierra #3).
-- CI roto por el paquete `tools` eliminado por Google (setup-android v3 → v4).
-- 7 pulidos del review del reproductor: slider en fracción 0..1, seek con clamp, prev/next ocultos sin cola, duration fallback y sheet gating.
+- Local-file playback no longer fails immediately when offline.
+- CI Android setup moved from the removed `tools` package workflow to `setup-android` v4.
+- Player review follow-ups: normalized slider fractions, clamped seeks, source-gated transport controls, duration fallback, and sheet gating.
 
 ## [0.0.6] — 2026-09-18
+
 ### Added
-- Pipeline de release firmado con keystore propio y secrets en CI (`release.yml`).
-- README completo para GitHub con diseño visual, hero y diagramas de arquitectura.
+- Signed release pipeline with a private keystore and CI secrets.
+- Complete GitHub README with hero, device screenshot, and architecture diagram.
+
 ### Changed
-- APK release con R8 y shrink habilitados, bajando a 7.3MB con gate duro `<40MB`.
-- Rama `main` protegida con check de CI `build` requerido.
+- Release builds enable R8 and resource shrinking, with a hard `<40 MB` gate.
+- `main` branch protection requires the `build` CI check.
 
 ## [0.0.5] — 2026-09-12
+
 ### Fixed
-- El APK debug bajó de 67.4MB a 35.6MB (−47%): fuera `material-icons-extended`, 6 vectores propios verbatim, cero cambio visual (cierra issue #2).
+- Removed `material-icons-extended`; the debug APK dropped from 67.4 MB to 35.6 MB in the recorded build (issue #2).
 
 ## [0.0.4] — 2026-09-12
+
 ### Added
-- Carátulas en la UI con Coil: thumb en mini-player, hero en la sheet, covers en canciones y álbumes, fallback genérico si no hay arte.
+- Coil-loaded local album artwork in the mini-player, full player sheet, songs, and albums, with generic fallbacks.
 
 ## [0.0.3] — 2026-09-12
+
 ### Added
-- Sección "Curadas" en Descubrir: presets fijos + tiles Lofi/Chill/Ambient con play y favorito idénticos. Omarchy quedó fuera de alcance (no existe en el directorio).
+- Curated Discover presets plus Lofi, Chill, and Ambient tag tiles using the standard station-list path.
 
 ## [0.0.2] — 2026-09-12
+
 ### Added
-- Pipeline de release por tag (`fonamp-<tag>.apk` debug en GitHub Releases).
-- `artworkUri` local expuesto de MediaStore al player (base para carátulas).
-- Templates de issues (bug / mejora) y convención de versiones en AGENTS.md.
+- Tag-triggered APK release pipeline.
+- MediaStore `artworkUri` exposure for local player metadata.
+- Issue templates and version conventions in `AGENTS.md`.

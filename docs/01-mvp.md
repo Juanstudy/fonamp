@@ -1,46 +1,58 @@
-# Fonamp v1 — MVP Definition
+# Fonamp v1 — MVP Definition and Shipped Baseline
 
-> Status: draft · Slice: v1 (Foundation + Local + Radio) · Last updated: 2026-09-10
+> Status: v1 definition completed; current baseline v0.0.13 · Updated: 2026-09-23
 
-## 1. MVP goal
-Prove the foundation: a modular app where **local music + radio discovery** play through
-**one stable background player**, and where a new audio source can be added against the
-`Source` contract without touching the player or the UI shell.
+## Goal
 
-## 2. User
-The founder, validating daily use: discover a station in seconds, switch to local music,
-keep it playing with the screen off.
+Prove a modular Android foundation where local music and internet radio share one stable background player, with source implementations isolated behind a common contract.
 
-## 3. Scope — IN
-1. **Modular scaffold**: `app`, `core/player`, `core/network`, `core/database`,
-   `provider/api`, `feature/library`, `feature/radio`, `feature/settings`, design system.
-2. **`Source` contract** (`provider/api`) + `LocalSource` + `RadioBrowserSource`.
-3. **Local**: MediaStore auto-load (songs/artists/albums), permission on demand.
-4. **Radio**: country/genre/tag index with filter, station lists, 1-tap play, favorites (local).
-5. **Player**: single Media3/ExoPlayer instance, background service + notification controls,
-   stream error handling (timeout, visible error, retry).
-6. **Settings + theme**: light/dark base theme (first customization slice).
+## Original v1 scope
 
-## 4. Scope — OUT (explicit non-goals for v1)
-- Podcasts, URL downloads, external providers.
-- Advanced customization (tab order, EQ, sleep timer, speed) — theme only.
-- Android Auto, widgets, history, M3U import, tops/random/name search.
-- iOS, backend, accounts.
+### Shipped
 
-## 5. Acceptance criteria
-- [ ] Fresh install → local collection visible with zero configuration (after audio permission).
-- [ ] Discover → filter → play a station in ≤3 taps from launch.
-- [ ] Audio continues with screen off; notification play/pause/next/prev respond.
-- [ ] Dead stream → visible error + retry; UI never freezes; offline directory → explicit retry state.
-- [ ] Permission denied → explanatory empty state, no broken screen.
-- [ ] A mock `Source` (e.g. bundled demo feed) builds against `provider/api` in <1 day, no player/UI-shell changes.
-- [ ] `./gradlew test` green; release APK <40 MB (validated post-v1 when the release pipeline exists); debug APK monitored with no hard gate in v1; permissions limited to audio + internet + foreground playback (+notifications).
+1. **12-module scaffold:** app shell, five core modules, three providers, and three features.
+2. **Source contract:** `LocalSource` and `RadioBrowserSource` return typed results and map `AudioItem` to Media3 `MediaItem`.
+3. **Local collection:** MediaStore songs, artists, and albums after on-demand audio permission.
+4. **Radio:** country and genre/tag discovery, 24-hour cache, one-tap playback, and Room favorites.
+5. **Player:** one Media3 session, background service, notification controls, and visible failure/retry states.
+6. **Settings and theme:** System/Light/Dark persistence plus directory-cache transparency and About information.
 
-## 6. Risks
-- "All-in-one" scope creep → defense: per-slice non-goals (this file).
-- Unstable third-party streams → cache + multi-mirror fallback (validated in prototype).
-- Radio Browser downtime → cached directory + explicit offline state.
+### Additions shipped after the original v1 cut
 
-## 7. What v1 does NOT need to prove
-Monetization, growth, multi-user sync, or provider breadth. v1 proves **foundation +
-daily usability + expandability**.
+- Local collection search
+- Local album artwork and RadioBrowser station artwork
+- Station-name search with debounce and retry
+- Progress seek, previous/next, and visible Up next queue
+- Shuffle, repeat, playback speed, and one-shot sleep timer
+- Best-effort queue/position restore after process death
+- In-app GitHub release check, download, and system-installer handoff
+- Signed R8 release pipeline
+
+## Current acceptance evidence
+
+| Criterion | Status | Current evidence |
+| --------- | ------ | ---------------- |
+| MediaStore collection after permission | Shipped | `LocalSource` and Collection UI/state |
+| Discover → station → playback | Shipped | Radio Discover, station screen, shared `PlayerManager` |
+| Background playback and notification controls | Shipped | Media3 `PlaybackService` and `PlayerManager` |
+| Designed failure, offline, denied, and empty states | Shipped | Shared states across current feature screens |
+| New source without player/tab changes | Shipped architecture seam | `Source` contract plus Hilt source set and `ExpandabilityTest` |
+| Signed release below 40 MB | Shipped pipeline | Tag workflow; last recorded size 7.3 MB on 2026-09-12 |
+| Unit-test/build gate | Repository gate | `./gradlew test` and `assembleDebug`; not re-run for this documentation-only work |
+
+## Still out of scope
+
+- Podcasts and episode subscriptions
+- URL downloads and watched folders
+- Navidrome, Jellyfin, Plex, or public streaming providers
+- Tab customization, EQ, widgets, and Android Auto
+- Play Store distribution and accounts
+
+## Open verification items
+
+- Cold-start performance under two seconds on a defined mid-range device
+- A separately enforced playback-stall timeout; current code surfaces typed player failures but does not document a measured stall threshold
+- Total app-storage usage in Settings
+- A complete artwork-cache eviction policy
+
+These remain open; do not present them as accepted or measured behavior.

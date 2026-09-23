@@ -2,88 +2,82 @@
 
 ## Purpose
 
-Define the v1 modular foundation that makes Fonamp expandable, lightweight, and shippable: module layout, dependency rules, shared UI shell, build constraints, and quality gates. This is the structural slice all other v1 domains build on.
+Define fonamp's current modular foundation, dependency boundaries, shared UI shell, Android build posture, and quality gates.
 
 ## Requirements
 
-### Requirement 1: Multi-module layout
+### Requirement 1: Twelve-module layout
 
-The system MUST provide the v1 modules `app`, `core/player`, `core/network`, `core/database`, `core/permissions`, `core/ui`, `provider/api`, `provider/radio`, `provider/local`, `feature/library`, `feature/radio`, `feature/settings`, plus a Material3 design system with shared state components.
+The system MUST provide `app`, `core/player`, `core/network`, `core/database`, `core/permissions`, `core/ui`, `provider/api`, `provider/radio`, `provider/local`, `feature/library`, `feature/radio`, and `feature/settings`, with single-purpose module boundaries.
 
 #### Scenario: Module inventory present
 
-- GIVEN a fresh checkout of the v1 tree
-- WHEN the reviewer lists top-level Gradle modules
-- THEN each of the listed modules exists with its own build file and single responsibility, and `core/ui` exposes `Loading`, `Empty`, `Offline`, `Denied`, and `ErrorRetry` components.
+- GIVEN a current checkout
+- WHEN the Gradle module list is inspected
+- THEN all twelve modules exist and `core/ui` provides the shared state and player surfaces
 
 ### Requirement 2: Dependency direction
 
-The system MUST enforce that `feature/*` modules never depend on each other, all features depend only on `core/*` plus `provider/api`, and `app` alone wires navigation and DI; adding a new `provider/*` source MUST NOT require changes to the player or UI shell.
+The system MUST keep `feature/*` modules independent of one another, make `app` the composition root for navigation/DI/update installation, and keep `core/player` free of concrete provider dependencies. A new source MUST be implementable behind `provider/api` and registered in `app` without changing player internals or bottom-tab routes.
 
-#### Scenario: New mock source without shell changes
+#### Scenario: New source registration
 
-- GIVEN the v1 tree builds
-- WHEN a developer adds a `provider/demo` module implementing `Source` and registers it in `app` DI
-- THEN `./gradlew test` and `./gradlew assembleDebug` succeed with zero edits to `core/player`, `core/ui`, or bottom-tab navigation.
+- GIVEN a new `Source` implementation behind `provider/api`
+- WHEN it is registered in the Hilt source set
+- THEN the app can resolve it by id without changing `core/player` or bottom-tab navigation
 
 #### Scenario: Feature isolation
 
 - GIVEN the Gradle dependency graph
-- WHEN inspected for `feature/library`, `feature/radio`, `feature/settings`
-- THEN no edge exists between any two `feature/*` modules.
+- WHEN feature modules are inspected
+- THEN no edge exists between any two `feature/*` modules
 
-### Requirement 3: Dependency allowlist and prohibited SDKs
+### Requirement 3: Audited dependencies and prohibited SDKs
 
-The system MUST build v1 only on Kotlin, Jetpack Compose (Material3, BOM), Media3/ExoPlayer, Hilt, Retrofit/OkHttp, kotlinx.serialization, Room, and Coroutines/Flow plus testing libs (JUnit, Robolectric, Turbine, MockWebServer); the app MUST NOT include any ad, analytics, crash-reporting, or Firebase SDK.
+The build MUST remain on the documented Android/Kotlin stack and MUST NOT include ad, ad mediation, analytics, crash-reporting, or Firebase SDKs. New dependencies outside the documented stack require an explicit what/why/size-license justification.
 
 #### Scenario: Dependency audit
 
-- GIVEN the merged dependency report for the debug APK
-- WHEN scanned for `ads`, `admob`, `firebase`, `analytics`, or `crashlytics` artifacts
-- THEN no match is found and every non-allowlist entry has a written 3-line justification (what, why existing libs cannot do it, size/license impact).
+- GIVEN a merged debug build
+- WHEN dependency and build files are scanned
+- THEN prohibited SDK names are absent and every additional dependency has a recorded justification
 
 ### Requirement 4: UI shell and tab visibility
 
-The system MUST show exactly the bottom tabs Collection, Radio, Favorites, and Settings in v1, keep Podcasts and Downloads tabs hidden until their slices ship, and dock a persistent mini-player above the tabs whenever audio is playing or paused.
+The system MUST show exactly Collection, Radio, Favorites, and Settings as bottom tabs. Podcasts, Downloads, and EQ MUST remain absent until implemented, and the mini-player MUST remain above the tabs while player context is present.
 
-#### Scenario: Tab inventory
+#### Scenario: Current tab inventory
 
-- GIVEN the app launched to any tab
+- GIVEN the app on any current tab
 - WHEN the bottom bar is inspected
-- THEN it contains Collection, Radio, Favorites, Settings and no Podcasts, Downloads, or EQ entry points (the sleep timer lives inside the player sheet, not as a tab).
+- THEN it contains exactly Collection, Radio, Favorites, and Settings with no roadmap-only entry points
 
-#### Scenario: Mini-player persistence
+### Requirement 5: Material3 states and accessibility baseline
 
-- GIVEN audio is playing on the Radio tab
-- WHEN the user switches to Collection and to Settings
-- THEN the same mini-player remains visible above the tabs on every tab with working play/pause.
+The system MUST use Material3 light/dark themes and shared `Loading`, `Empty`, `Offline`, `Denied`, and `ErrorRetry` states. Playback actions MUST meet the 48dp touch-target/content-description baseline.
 
-### Requirement 5: Material3 defaults and shared states
+#### Scenario: State coverage
 
-The system MUST use Material3 default light and dark color roles, typography, and iconography with no custom design tokens in v1, and every list screen MUST render one of `Loading` (shimmer rows, never blank), `Empty`, `Offline`, `Denied`, or `ErrorRetry` instead of a blank screen or crash-as-UI.
-
-#### Scenario: Every state is designed
-
-- GIVEN each of Collection, Discover, Station list, and Favorites in each of loading, empty, offline, denied, and error conditions
+- GIVEN current list and player screens in a failure or empty condition
 - WHEN rendered in light and dark themes
-- THEN a designed state component is shown with default Material3 styling and an actionable control where applicable (e.g. retry, grant again).
+- THEN a designed state is shown with an action where appropriate rather than a blank screen or crash
 
-### Requirement 6: Build toolchain and size
+### Requirement 6: Android toolchain and release posture
 
-The system MUST compile with minSdk 29, compile/targetSdk 35, JDK 17, Gradle 8.10 + AGP 8.7 lineage, ship v1 as a direct APK with no R8/minify, keep the release APK under 40 MB (validated post-v1 when the release pipeline exists; debug APK monitored with no hard gate in v1 per 2026-09-12 parent decision), and pass `./gradlew test` green.
+The system MUST compile with `minSdk 29`, `compile/targetSdk 35`, JDK 17, Gradle 8.10, and AGP 8.7 lineage. Debug MUST remain unminified and monitored; release MUST enable R8 and resource shrinking and enforce the `<40 MB` workflow gate.
 
 #### Scenario: Toolchain and artifact check
 
-- GIVEN a clean checkout with JDK 17 and a configured Android SDK
-- WHEN `./gradlew test` then `./gradlew assembleDebug` run
-- THEN tests pass, the debug APK is produced and its size recorded (no hard gate in v1), and the manifest/build files declare minSdk 29 and compile/targetSdk 35 with no `isMinifyEnabled = true` for v1 dev.
+- GIVEN a checkout with JDK 17 and Android SDK 35
+- WHEN the audits and Gradle builds run
+- THEN module/version/SDK checks pass, tests and debug assembly are CI gates, and release configuration has R8/shrink enabled with debug minification disabled
 
-### Requirement 7: Performance, battery, and accessibility baseline
+### Requirement 7: Performance target remains open evidence
 
-The system MUST reach interactive in under 2 seconds on a mid-range device, page/cache directory lists, poll nothing, run the foreground service only while playing, expose touch targets of at least 48dp with content descriptions on playback controls, and support dynamic text.
+Cold-start under two seconds on a defined mid-range device is a product target, not a current measured guarantee. The app MUST use cache-backed directory loading and avoid idle polling, and a future acceptance record MUST identify the device, build, and measurement method before claiming the target is met.
 
-#### Scenario: Baseline gates
+#### Scenario: Performance claim requires evidence
 
-- GIVEN a mid-range device with a large local library and radio directory
-- WHEN cold-starting, scrolling lists, and backgrounding playback
-- THEN the first tab is interactive in under 2 seconds, lists scroll without blocking fetches, no periodic background work runs while idle, and playback controls meet the 48dp and content-description checks.
+- GIVEN a proposed claim that cold start is under two seconds
+- WHEN it is documented as achieved
+- THEN current build, device profile, and reproducible measurement evidence are attached

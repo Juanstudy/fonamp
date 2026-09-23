@@ -1,62 +1,108 @@
 # AGENTS.md — fonamp
 
-## Proyecto
-App Android nativa (Kotlin + Jetpack Compose + Hilt + Media3).
-- `applicationId`: `com.fonamp.app` — `minSdk 29`, `targetSdk 35`, JDK 17 (Corretto)
-- Módulos: `:app`, `:core:*` (player, network, database, permissions, ui), `:provider:*` (api, radio, local), `:feature:*` (library, radio, settings)
-- Versión actual: `0.0.13` (`versionCode 13`) en `app/build.gradle.kts`
+## Project
 
-## Workflows CI/CD
+Fonamp is a native Android music and radio player built with Kotlin, Jetpack Compose, Hilt, Media3, Room, and a 12-module architecture.
 
-### CI — `.github/workflows/android.yml`
-Corre en `push` a `main`, `feat/**` y `pull_request` a `main`:
-1. `scripts/audit-toolchain.sh` — 12 módulos, pins, SDKs, R8 solo en release (debug sin minify)
-2. `./gradlew test` — gate de unit tests
-3. `./gradlew assembleDebug` — genera `app/build/outputs/apk/debug/app-debug.apk`
-4. `scripts/audit-gates.sh` — sin trackers (ads/admob/firebase/analytics/crashlytics), permisos en allowlist, APK monitoreado
+- `applicationId`: `com.fonamp.app`
+- SDK: `minSdk 29`, `compileSdk 35`, `targetSdk 35`
+- Toolchain: JDK 17 (Corretto in CI), Gradle 8.10, AGP 8.7.x
+- Current release: `0.0.13` (`versionCode 13`) from `app/build.gradle.kts`
+- Current modules: `:app`, five `:core:*`, three `:provider:*`, and three `:feature:*` modules
 
-### Release APK — `.github/workflows/release.yml`
-Publica el APK en GitHub Releases.
-- Trigger: `push` de tag `v*` (ej: `v0.1.0-slice-a`)
-- Permisos: `contents: write`
-- Pasos: checkout → JDK 17 → Android SDK → Gradle → restaura keystore desde secrets → `assembleRelease` (R8 + shrink, **firmado**) → gate `<40MB` → `cp app-release.apk fonamp-<tag>.apk` → `softprops/action-gh-release@v2` con `generate_release_notes: true`
-- Resultado: Release con asset `fonamp-<tag>.apk` (build **release firmado** con keystore propio, R8 + shrink — para prueba interna, no Play Store)
-- Secrets requeridos: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`. Local: `keystore.properties` (gitignorado, ver `keystore.properties.example`)
+## Mandatory documentation contract
 
-### Cómo sacar un release
-```bash
-git tag -a v0.0.2 -m "fonamp 0.0.2"
-git push origin v0.0.2
-# GitHub → Releases → aparece en 3-5 min con el .apk adjunto
+Documentation impact is part of every delivery boundary. Before **every implementation, addition, commit, PR, and release**:
+
+1. Review the change for documentation impact.
+2. Update every affected current document in the **same work unit**. Check the relevant current specs under `openspec/specs/`, the `Unreleased` section of `CHANGELOG.md`, and the applicable `README.md` / product / design / technology / wireframe documents.
+3. Add an `Unreleased` changelog entry for shipped behavior or fixes. Do not present planned work as shipped.
+4. Verify `versionCode`, `versionName`, tags, and release metadata against `app/build.gradle.kts` and repository history.
+5. Curate release notes after publishing; generated GitHub notes alone are not the final internal-release notes.
+6. Search for contradictory shipped-versus-planned claims before delivery.
+
+**Archived OpenSpec artifacts under `openspec/changes/archive/` are immutable historical records. Never rewrite them to reflect later behavior.** Update the current specs under `openspec/specs/` instead.
+
+## Current architecture
+
+```text
+app                  navigation, Hilt graph, retained holders, update installation
+core/player          Media3 service/controller, playback state, queue persistence
+core/network         RadioBrowser/GitHub clients, mirrors, 24-hour directory cache
+core/database        Room favorites and theme persistence
+core/permissions     audio and notification runtime gates
+core/ui              shared states, artwork, mini-player, player sheet, Up next
+provider/api         source contract and MediaItem mapping
+provider/radio       RadioBrowser source and curated stations
+provider/local        MediaStore source
+feature/library      Collection UI and state
+feature/radio        Discover, station, search, and favorites UI/state
+feature/settings     theme, directory cache, About, and update-check UI/state
 ```
 
-## Versiones (cómo trabajamos)
-- Fuente única: `app/build.gradle.kts` (`versionCode` int creciente, `versionName` semver `X.Y.Z`).
-- El feature se commitea **tal cual se revisó**; el bump va en un commit aparte `chore: bump to X.Y.Z (versionCode N)` para no invalidar el review.
-- Ese mismo commit actualiza la línea `Versión actual` de este AGENTS.md.
-- El tag `vX.Y.Z` se crea sobre el commit del bump y se pushea: eso dispara `release.yml`.
-- Releases publican build **release firmado** con keystore propio (R8 + shrink, prueba interna). El gate `<40MB` es duro sobre el APK release.
-- Ejemplo 0.0.2: `735c3d6` feat artwork + `5ba032f` bump → tag `v0.0.2`.
-- Tags **anotados** siempre: `git tag -a vX.Y.Z -m "fonamp X.Y.Z"` (autor+fecha+mensaje; los livianos pierden metadata).
-- `main` está **protegida**: requiere check `build` (CI) en verde, sin force-push ni borrado. Se puso por API; equivale en UI a Settings → Branches → Add rule → `main` → ✅ Require status checks (`build`) + ✅ Do not allow force pushes/deletions. `enforce_admins: false` (solo-dev: podés pushear directo, pero nada se mergea en rojo).
-- Release notes: formato fijo en 3 bloques + changelog auto. Tras publicar el workflow (solo trae `Full Changelog`), curar con `gh release edit vX.Y.Z --notes <archivo>`:
-  ```markdown
-  ## Qué trae (3-5 bullets, lenguaje de usuario)
-  ## Fixes (con #issue cuando aplique)
-  ## Detalles (tamaño APK, firma, CI)
-  **Full Changelog**: <link auto vA...vB>
-  ```
-  Desde v0.0.7 todas las releases llevan descripción curada (las ≤v0.0.5 salieron peladas). Cuando haya usuarios externos, el release sale en `draft` primero y se publica a mano tras probar el APK.
+Dependency rules:
 
-## Gates y deuda conocida
-- `scripts/audit-gates.sh`: debug APK **monitoreado** (sin gate duro en v1); gate `<40MB` duro sobre el APK release (`app-release-unsigned.apk` sin firmar, `app-release.apk` el día que se firme).
-- Medición 2026-09-12: release sin firmar **7,3MB** (R8 + shrink, muy por debajo del gate); debug local ~34MB monitoreado. La firma agrega ~1KB, no mueve la aguja.
-- Permisos allowlist v1: `READ_MEDIA_AUDIO`, `READ_EXTERNAL_STORAGE`, `INTERNET`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS`.
+- `feature/*` modules do not depend on one another.
+- `app` wires navigation, Hilt, Media3 access, queue restore, and APK installation.
+- `core/player` consumes `MediaItem` and does not import concrete providers.
+- New sources implement `provider/api` and are registered in the app graph.
 
-## Comandos útiles
+## CI and release gates
+
+### CI — `.github/workflows/android.yml`
+
+Runs on pushes to `main` and `feat/**`, and on pull requests to `main`:
+
+1. `scripts/audit-toolchain.sh` — 12 modules, version pins, SDK levels, R8 only in `:app:release`
+2. `./gradlew test` — unit-test gate
+3. `./gradlew assembleDebug` — debug APK build
+4. `scripts/audit-gates.sh` — prohibited SDKs, permission allowlist, debug monitoring, and release-size gate when a release APK is present
+
+### Signed release APK — `.github/workflows/release.yml`
+
+- Trigger: an annotated `v*` tag push.
+- `assembleRelease` uses R8 and resource shrinking.
+- CI restores the private keystore from `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`; the published APK is signed.
+- The release workflow enforces a hard `<40 MB` check on `app-release.apk`.
+- Local release builds are signed only when `keystore.properties` or the `FONAMP_*` signing environment variables are present; otherwise they are unsigned.
+- The asset name is `fonamp-<tag>.apk`. Releases are for direct/internal installation, not Play Store distribution.
+
+The last recorded size measurement in repository documentation is **7.3 MB on 2026-09-12**. Re-measure before quoting a current size.
+
+## Versioning and release workflow
+
+- `app/build.gradle.kts` is the source of truth for `versionCode` and `versionName`.
+- Keep the feature commit focused; put the version bump in a separate `chore: bump to X.Y.Z (versionCode N)` work unit when that is the accepted workflow.
+- The bump updates the current version in this file and `README.md` in the same work unit.
+- Create annotated tags: `git tag -a vX.Y.Z -m "fonamp X.Y.Z"`.
+- Push the tag to trigger `release.yml`.
+- After publication, curate release notes in this format:
+  - user-facing highlights;
+  - fixes with issue/PR references when available;
+  - technical details including measured size, signing, and CI status;
+  - the generated full changelog link.
+- For external distribution, publish as a draft, test the APK, then publish manually.
+
+## Permissions and known gaps
+
+The current CI allowlist contains exactly seven declarations:
+
+- `READ_MEDIA_AUDIO`
+- `READ_EXTERNAL_STORAGE` (`maxSdkVersion=32`)
+- `INTERNET`
+- `FOREGROUND_SERVICE`
+- `FOREGROUND_SERVICE_MEDIA_PLAYBACK`
+- `POST_NOTIFICATIONS`
+- `REQUEST_INSTALL_PACKAGES` (in-app update handoff to the system installer)
+
+Current open or unverified product claims include cold-start performance on a mid-range device, an explicit playback-stall timeout, total app-storage reporting, and a full artwork-cache policy. Keep these labeled open rather than presenting them as measured behavior.
+
+## Useful commands
+
 ```bash
 ./gradlew test
 ./gradlew assembleDebug
+./gradlew assembleRelease
 ./scripts/audit-toolchain.sh
 ./scripts/audit-gates.sh
 ```

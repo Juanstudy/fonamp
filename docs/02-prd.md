@@ -1,78 +1,96 @@
-# Fonamp — Product Requirements Document (PRD)
+# Fonamp — Product Requirements
 
-> Status: draft · Covers: v1 (binding) + v2–v4 (directional) · Last updated: 2026-09-10
+> Status: current through v0.0.13 · Updated: 2026-09-23
 
-## 1. Background
-See `00-vision.md` (problem, users, principles) and `01-mvp.md` (v1 scope).
-The prototype (`~/Projects/cliamp-android`, archived) validated: Media3 single player,
-radio-browser.info integration with mirror fallback, background + notification,
-Room favorites, Compose UI. This PRD carries those learnings forward — patterns, not code.
+## Status legend
 
-## 2. Functional requirements
+- **Shipped:** implemented and present in current source.
+- **Planned:** roadmap requirement; no current app surface.
+- **Open:** requirement or claim still needs design, evidence, or verification.
 
-### 2.1 Collection (v1: local · v3: +downloads)
-- **LIB-1** App lists device audio (MediaStore) grouped by songs/artists/albums with zero setup. *(v1)*
-- **LIB-2** Audio permission is requested on first entering Local, with explanatory empty state if denied. *(v1)*
-- **LIB-3** Downloaded files (v4) appear in the same Collection with an offline badge and storage management (per-item delete, total size). *(v3)*
-- **LIB-4** Search across collection (title/artist/album). *(v2, stretch for v1 if cheap)*
+## Product requirements
 
-### 2.2 Radio (v1)
-- **RAD-1** Browse directory by country with station counts + text filter.
-- **RAD-2** Browse by genre/tag with text filter.
-- **RAD-3** Station list shows name and bitrate/codec when available, with generic icons (artwork deferred to v2).
-- **RAD-4** Favorite/unfavorite in 1 tap from list and player; persisted locally.
-- **RAD-5** Pull-to-refresh directory; cached index (24h) with explicit offline + retry state.
-- **RAD-6** Click-count reported to radio-browser on play (fire-and-forget, never blocks playback).
+### Collection
 
-### 2.3 Player (v1)
-- **PLY-1** One player for every source (radio streams + local files + later podcasts/downloads).
-- **PLY-2** Background playback with media notification (play/pause/next/prev) and headset controls.
-- **PLY-3** Radio: play/stop + ICY metadata when available. Local: queue with next/prev + shuffle (shuffle: v1 or v2 — open).
-- **PLY-4** Stream failures: 10s timeout, visible message, manual retry; never freezes UI.
-- **PLY-5** Mini-player on every tab + full player sheet with artwork/metadata.
+| ID | Requirement | Status |
+| -- | ----------- | ------ |
+| LIB-1 | List MediaStore audio as songs, artists, and albums without accounts or manual configuration | Shipped |
+| LIB-2 | Request audio-read permission on entering Collection and provide a designed denied state | Shipped |
+| LIB-3 | Keep filter context across the artist/album/song views | Shipped |
+| LIB-4 | Filter the local collection by title, artist, or album without network calls | Shipped |
+| LIB-5 | Show MediaStore album artwork with a generic fallback | Shipped |
+| LIB-6 | Merge downloaded files into the collection with storage management | Planned |
 
-### 2.4 Podcasts (v2, directional)
-- **POD-1** Search shows, subscribe, new-episode feed.
-- **POD-2** Per-episode download for offline + auto-download rules (e.g. latest N, Wi-Fi only).
-- **POD-3** Playback speed + sleep timer (sleep timer also serves music).
-- **POD-4** OPML import (stretch).
+### Radio
 
-### 2.5 Downloads (v4, directional)
-- **DL-1** Paste URL → audio download with progress, queue, retry (WorkManager).
-- **DL-2** Watched folder: files copied to device are picked up automatically.
-- **DL-3** Download source scope decided in v4 proposal (legal/ToS review per source type).
+| ID | Requirement | Status |
+| -- | ----------- | ------ |
+| RAD-1 | Browse countries and genres/tags, then open a station list | Shipped |
+| RAD-2 | Show station counts and optional bitrate/codec metadata honestly | Shipped |
+| RAD-3 | Cache the directory for 24 hours and keep cached content visible with offline/retry states | Shipped |
+| RAD-4 | Play stations in one tap and report click counts without blocking playback | Shipped |
+| RAD-5 | Search station names through the Discover filter after two characters and a debounce | Shipped |
+| RAD-6 | Show curated Lofi, Chill, and Ambient entry points through the normal tag path | Shipped |
+| RAD-7 | Favorite/unfavorite stations in Room and support undo after removal | Shipped |
+| RAD-8 | Show RadioBrowser favicons with generic fallbacks | Shipped |
+| RAD-9 | Add tops/random browsing | Planned |
 
-### 2.6 Providers (v3, directional)
-- **PRV-1** Self-hosted (Navidrome/Jellyfin/Plex) against the `Source` contract.
-- **PRV-2** Public streaming sources per own proposals.
-- **PRV-3** Spotify only if justified (SDK/DRM cost documented first).
+### Player
 
-### 2.7 Customization (v1: theme · rest later)
-- **CUS-1** Light/dark theme. *(v1)*
-- **CUS-2** Tab order/visibility. *(v2+)*
-- **CUS-3** Parametric EQ + presets. *(v2+)*
-- **CUS-4** Sleep timer, playback speed (podcasts first). *(v2)*
+| ID | Requirement | Status |
+| -- | ----------- | ------ |
+| PLY-1 | Route local files and radio through one Media3 background session | Shipped |
+| PLY-2 | Keep notification and headset controls synchronized with playback | Shipped |
+| PLY-3 | Offer local seek, previous/next, and a visible Up next queue | Shipped |
+| PLY-4 | Offer shuffle, repeat off/all/one, playback speed, and a one-shot sleep timer | Shipped |
+| PLY-5 | Surface stream errors inline with retry without freezing the rest of the UI | Shipped |
+| PLY-6 | Restore queue and position best-effort after process death, paused rather than auto-playing | Shipped |
+| PLY-7 | Enforce and measure a specific 10-second stalled-stream threshold | Open |
 
-### 2.8 Settings
-- **SET-1** Theme, cache management (directory + artwork), storage usage, licenses, version.
-- **SET-2** Every permission justified inline at request time (no pre-permission walls).
+### Podcasts, downloads, and providers
 
-## 3. Non-functional requirements
-- **Performance**: cold start to interactive <2s on mid-range; directory lists cached, paged.
-- **Size**: release APK <40 MB (validated post-v1 when the release pipeline exists); debug APK monitored with no hard gate in v1 (currently ~63 MB); R8/minify posture post-v1; no dependency without justification (allowlist, see `04-technology.md`).
-- **Battery**: no polling; downloads/uploads only on demand; foreground service only while playing.
-- **Reliability**: player survives network loss (error state, not crash); process-death restore of queue where feasible.
-- **Security/privacy**: INTERNET + audio + foreground-playback (+notifications) only; cleartext only where streams require it; zero third-party trackers; no data leaves the device except user-configured servers and directory APIs.
-- **Accessibility**: touch targets ≥48dp, content descriptions on controls, dynamic text support.
+| ID | Requirement | Status |
+| -- | ----------- | ------ |
+| POD-1 | Discover podcasts, subscribe, and expose new episodes | Planned |
+| POD-2 | Download and organize episodes offline | Planned |
+| DL-1 | Download audio from a pasted URL with progress, retry, and WorkManager | Planned |
+| PRV-1 | Integrate self-hosted providers behind `Source` | Planned |
+| PRV-2 | Evaluate public streaming providers one proposal at a time | Planned |
 
-## 4. Constraints
-- Android native, Kotlin; minSdk 29 (Android 10+, decided).
-- Dependency allowlist: ExoPlayer/Media3, Room, Retrofit/Moshi, Hilt, Coroutines/Flow, Compose BOM + testing libs. Anything else needs a written reason.
-- No ad/analytics/crash SDKs. No Firebase.
+### Customization and settings
 
-## 5. Open questions (resolved for v1 — 2026-09-12)
-1. Shuffle/repeat — RESOLVED: no shuffle/repeat in v1 (local next/prev, radio play/stop; shuffle deferred to v2).
-2. Collection search — RESOLVED: stretch goal, simple title/artist/album filter only if cheap; cut if costly (otherwise v2).
-3. Favorites sync — RESOLVED: local-only for v1 (Room, no sync); sync/export model TBD post-v1.
-4. Download source scope for v4 (legal/ToS) — OPEN, deferred to v4 proposal.
-5. Release signing / distribution — RESOLVED for v1 dev: direct APK only; F-Droid/Play deferred to a future public build.
+| ID | Requirement | Status |
+| -- | ----------- | ------ |
+| CUS-1 | System/Light/Dark theme persisted in Room and applied immediately | Shipped |
+| CUS-2 | Playback speed and sleep timer in the player sheet | Shipped |
+| CUS-3 | Tab order/visibility and parametric EQ | Planned |
+| SET-1 | Directory-cache entry count, size, clear action, and confirmation | Shipped |
+| SET-2 | About version from `BuildConfig`, license pointer, and source summary | Shipped |
+| SET-3 | Manual and cold-start GitHub update checks with download and installer handoff | Shipped |
+| SET-4 | Total app-storage reporting and an artwork-cache manager | Planned |
+
+## Non-functional requirements
+
+| Area | Current requirement/status |
+| ---- | ------------------------- |
+| Privacy | Seven manifest permissions only; no prohibited ad, analytics, crash, or Firebase SDKs; update and directory egress is explicit |
+| Size | Release R8 + resource shrinking; hard `<40 MB`; last recorded release size 7.3 MB on 2026-09-12; debug is monitored |
+| Reliability | Typed source/player errors, explicit retry, best-effort paused queue restore |
+| Accessibility | Playback actions use at least 48dp targets and content descriptions; dynamic-text review remains ongoing |
+| Performance | Lists and cache behavior exist, but the under-two-second cold-start target has no current reproducible measurement |
+
+## Current constraints
+
+- Native Android/Kotlin, `minSdk 29`, `compile/targetSdk 35`, JDK 17
+- Twelve modules with `feature/*` isolation and app-level wiring
+- Direct signed APK distribution; no Play Store or required account
+- Cleartext HTTP remains enabled because arbitrary third-party radio streams may use it
+- No ad/analytics/crash SDKs or Firebase
+
+## Open product decisions
+
+1. Public-store distribution and release-signing policy beyond internal APK testing.
+2. Playback-stall timeout target and how to measure it.
+3. Queue persistence scope and retention policy.
+4. Artwork cache ownership, eviction, and Settings controls.
+5. External-provider order and licensing review.

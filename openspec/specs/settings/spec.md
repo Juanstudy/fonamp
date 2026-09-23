@@ -2,46 +2,64 @@
 
 ## Purpose
 
-Define the v1 Settings tab: the first customization slice (theme) plus cache, storage, and about transparency, without opening any v2+ customization surface.
+Define the current Settings surface: persisted theme selection, directory-cache transparency, About information, and GitHub release update checks/downloads without opening roadmap-only customization surfaces.
 
 ## Requirements
 
 ### Requirement 1: Theme selection
 
-The system MUST offer theme choices System, Light, and Dark, persist the choice across restarts, and apply it without requiring an app restart, satisfying the v1 theme customization scope on Material3 defaults.
+The system MUST offer System, Light, and Dark themes, persist the choice in Room across restarts, and apply it without requiring an app restart.
 
 #### Scenario: Theme round-trip
 
-- GIVEN the default System theme
+- GIVEN the System theme
 - WHEN the user selects Dark, restarts the app, then selects Light
-- THEN each selection applies immediately across all tabs and the player, and the choice survives the restart.
+- THEN each selection applies across the app immediately and the latest choice survives restart
 
-### Requirement 2: Cache and storage transparency
+### Requirement 2: Directory-cache transparency
 
-The system MUST show directory-cache and storage usage and provide a clear-directory-cache action that frees the cached bytes and confirms completion.
+The system MUST report directory-cache entry count and byte size and provide a confirmed clear action that removes cached directory data without clearing Room favorites or theme data.
 
-#### Scenario: Clear cache
+#### Scenario: Clear directory cache
 
-- GIVEN a populated directory cache with reported size
-- WHEN the user clears it
-- THEN the reported usage drops accordingly and a confirmation is shown; the next Discover visit refetches as needed.
+- GIVEN a populated directory cache
+- WHEN the user confirms clear
+- THEN the reported cache size drops, freed bytes are confirmed, and the next Discover visit refetches as needed
 
-### Requirement 3: About information
+#### Scenario: Scope is explicit
 
-The system MUST display the app version, open-source licenses, source reference, and an update check (latest GitHub release with Download/Later) in Settings.
+- GIVEN favorites and theme exist in Room
+- WHEN the user clears the directory cache
+- THEN favorites and theme remain available
+
+### Requirement 3: About and update information
+
+The system MUST display the `BuildConfig` version, a license pointer, a source summary, and a manual update action. The app shell MUST also run a cold-start update check. A newer GitHub release with an APK MUST offer separate Download and Later actions; download/install work MUST remain owned by `app`.
 
 #### Scenario: About visible
 
-- GIVEN the Settings tab
-- WHEN scrolled to About
-- THEN version, licenses entry, source link, and a "Check for updates" action are all present; tapping it with a newer release shows Download/Later, and with the current release confirms up-to-date.
+- GIVEN Settings is open
+- WHEN the About section is inspected
+- THEN the current app version, license pointer, source summary, and `Check for updates` action are present
 
-### Requirement 4: No advanced customization in v1
+#### Scenario: Update available
 
-The system MUST NOT expose tab order or visibility editing, parametric EQ or presets anywhere in v1. (The sleep timer and playback speed live in the player sheet, not in Settings.)
+- GIVEN GitHub Releases contains a newer version with an APK asset
+- WHEN the user accepts Download
+- THEN the app starts an APK download and later notifies the user when installation is available; the Android system installer remains responsible for final user confirmation
 
-#### Scenario: No v2 surfaces
+#### Scenario: No newer release
 
-- GIVEN the Settings tab and player sheet
-- WHEN all actions and controls are inspected
-- THEN no tab editor or EQ exists in Settings or the player sheet.
+- GIVEN the installed version is current or the release has no installable APK
+- WHEN a check completes
+- THEN the app stays coherent and does not present a broken update action
+
+### Requirement 4: No roadmap-only customization
+
+The system MUST NOT expose tab order/visibility editing or parametric EQ. Sleep timer and playback speed belong in the player sheet, not Settings.
+
+#### Scenario: Current surfaces remain scoped
+
+- GIVEN Settings and the player sheet
+- WHEN all controls are inspected
+- THEN no tab editor or EQ surface exists, while the shipped sleep and speed controls remain in the player sheet

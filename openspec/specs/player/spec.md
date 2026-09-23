@@ -2,72 +2,98 @@
 
 ## Purpose
 
-Define the single Media3 background player shared by every source: continuous playback with the screen off, notification and headset control, honest stream error handling, and one consistent mini-player plus full sheet.
+Define the single Media3 background player shared by current sources: screen-off playback, notification controls, source-appropriate transport behavior, visible queue context, recovery states, and best-effort restore.
 
 ## Requirements
 
 ### Requirement 1: Single player via MediaSessionService
 
-The system MUST route all v1 audio (local files and radio streams) through one Media3/ExoPlayer instance hosted in a `MediaSessionService`, and every source MUST reach it only as a `MediaItem`.
+The system MUST route current local files and radio streams through one Media3/ExoPlayer session hosted by a `MediaSessionService`, and every source MUST reach it only as `MediaItem`.
 
 #### Scenario: One instance for all sources
 
-- GIVEN a local song playing
-- WHEN the user taps a radio station and then another local song
-- THEN the same player session transitions between all three without spawning a second player, notification, or service.
+- GIVEN local audio playing
+- WHEN the user starts radio and then local audio
+- THEN the same session transitions without a second player, notification, or service
 
 ### Requirement 2: Background playback and notification
 
-The system MUST continue audio with the screen off and while other tabs or apps are in use, keep the foreground service alive only while playing, and expose a media notification with play/pause/next/previous that stays in sync with player state, plus headset-button handling.
+The system MUST continue audio with the screen off and expose a media notification with synchronized play/pause and source-appropriate next/previous controls.
 
 #### Scenario: Screen-off continuity
 
 - GIVEN a station or song playing
-- WHEN the screen is turned off and then the notification pause and play buttons are pressed
-- THEN audio pauses and resumes accordingly, the notification reflects the current state, and the service does not persist after playback is stopped.
+- WHEN the screen is turned off and notification controls are used
+- THEN playback state and notification state remain synchronized
 
-### Requirement 3: Per-source playback model
+### Requirement 3: Source-appropriate playback model
 
-The system MUST offer radio as play/stop with ICY metadata display when the stream provides it, and local as queue playback with next/previous plus seek bar. Shuffle, repeat, playback speed, and a sleep timer (one-shot stop after a chosen duration) are offered from the sheet for both sources.
+Radio MUST use stop semantics for a playing live stream and MUST NOT show a seek bar. Local audio MUST expose pause/resume, seek, previous/next, and queue context. Both sources MUST expose shuffle, repeat off/all/one, playback speed, and a one-shot sleep timer.
 
 #### Scenario: Radio versus local controls
 
-- GIVEN the full player sheet for a radio station showing ICY metadata when available
-- WHEN compared with the sheet for a local song
-- THEN the radio sheet shows play/stop and metadata without a seek bar, the local sheet shows next/previous and a working seek bar, and both sheets offer shuffle, repeat, speed, and sleep controls.
+- GIVEN radio and local sheets
+- WHEN their controls are compared
+- THEN radio omits seek and uses stop, local exposes seek/previous/next, and both expose the shared transport modes and sleep timer
 
 ### Requirement 4: Stream failure handling
 
-The system MUST time out stalled streams at 10 seconds, show a visible inline error with a manual retry action, keep the UI responsive throughout, and never freeze, crash, or silently stall on failure.
+The system MUST map playback failures to visible inline error states with manual retry and MUST keep the rest of the UI responsive. A separately enforced 10-second stalled-stream deadline is not part of the current verified requirement.
 
-#### Scenario: Dead stream
+#### Scenario: Failed stream
 
-- GIVEN a station whose stream never connects
-- WHEN playback is attempted
-- THEN within 10 seconds plus tolerance an inline error banner with retry appears in the player, the rest of the UI remains interactive, and tapping retry re-attempts the stream.
+- GIVEN a station that cannot connect or loses connectivity
+- WHEN the failure reaches the player
+- THEN an inline retry action appears and the rest of the UI remains interactive
 
-#### Scenario: Mid-stream network loss
+#### Scenario: Retry
 
-- GIVEN a playing stream that loses connectivity
-- WHEN the drop persists
-- THEN playback enters the visible error state with retry rather than crashing or spinning forever.
+- GIVEN the current queue and visible error
+- WHEN the user taps retry
+- THEN the current item is prepared and started again without a blank player state
 
 ### Requirement 5: Mini-player and full sheet
 
-The system MUST show a mini-player (icon, title, play/pause, close) above the bottom tabs on every tab during playback or pause, expand it to a full sheet on tap showing title, artist or station, source badge (`radio` or `local`), ICY metadata for radio, queue controls for local, a favorite toggle, and the error banner with retry when failing.
+The system MUST show a mini-player with artwork, title, source, play/pause, and close across tabs while queue context is present. Tapping it MUST open a full sheet with metadata, source badge, ICY title when available, favorite support for radio, source-appropriate transport, progress where valid, and error/retry where needed. Closing the chrome MUST NOT clear the queue.
 
 #### Scenario: Consistent player chrome
 
-- GIVEN playback started from Radio and separately from Collection
-- WHEN the mini-player and expanded sheet are inspected on each tab
-- THEN both show the same layout contract with the correct source badge and source-appropriate controls and metadata.
+- GIVEN playback started from Radio and Collection
+- WHEN mini-player and sheet are inspected
+- THEN both show the shared contract with correct source and available artwork/metadata
 
-### Requirement 6: Best-effort queue restore
+### Requirement 6: Visible Up next queue
 
-The system MUST attempt best-effort restoration of the queue and position after process death, with no guarantee, and MUST always land in a coherent state (restored queue or clean idle) rather than a broken or phantom-playing UI.
+The player sheet MUST list the remaining non-empty queue context and allow a user to select a row to jump within the current queue without replacing its sleep timer or error context.
+
+#### Scenario: Select Up next row
+
+- GIVEN a multi-item local queue
+- WHEN the user taps a visible Up next row
+- THEN playback jumps to that item and remains in the same queue context
+
+### Requirement 7: Sleep timer
+
+The player MUST offer 5, 10, 15, 30, 45, and 60 minute presets plus Off. Arming MUST be one-shot: when the deadline expires, playback stops without auto-resuming; starting a new queue or manually stopping clears the timer.
+
+#### Scenario: Timer expires
+
+- GIVEN an armed sleep timer
+- WHEN its deadline arrives
+- THEN playback stops and the queue remains available without automatic playback
+
+### Requirement 8: Best-effort queue restore
+
+The system MUST persist and attempt to restore queue, index, and local position after process death. Restored context MUST start paused; the system MUST land in either coherent restored context or clean idle state, never phantom-playing.
 
 #### Scenario: Process death
 
-- GIVEN a local queue mid-album and a killed process
+- GIVEN a local queue and saved position before the process is killed
 - WHEN the app restarts
-- THEN it either resumes the queue context or shows the idle player chrome, never a stuck progress bar or controls for audio that is not playing.
+- THEN a valid queue is restored paused at a bounded position, or the app presents a coherent idle player
+
+#### Scenario: Invalid restore input
+
+- GIVEN an empty or out-of-range persisted snapshot
+- WHEN restore runs
+- THEN the invalid context is ignored and the player does not expose stuck controls or progress

@@ -1,63 +1,71 @@
-# Fonamp — Product Vision (Global Documentation)
+# Fonamp — Product Vision
 
-> Status: draft · Owner: founder (primary user) · Last updated: 2026-09-10
+> Status: active · Current baseline: v0.0.13 · Updated: 2026-09-23
 
-## 1. What is Fonamp
-Fonamp (*fono*: sound + phone, *amp*: amplifier lineage) is a personal, open-source,
-all-in-one audio hub for Android: your music (local + downloads), radio, and podcasts
-in a single lightweight player — customizable, expandable, secure, with zero ads.
+## Vision
 
-## 2. Problem
-A heavy listener (music 24/7, plus radio, podcasts, downloads) currently juggles 3–4
-apps: a local player, a radio app, a podcast app, a downloader. No unified collection,
-no integrated offline, and nearly every app ships ads and trackers. No open-source
-stable combo exists in one app (validated during the cliamp-android prototype, 2026-09).
+Fonamp is a lightweight, open-source Android audio hub: local music and internet radio in one stable, private player. The long-term vision also includes podcasts, downloads, and user-controlled providers, but those areas are not shipped.
 
-## 3. Target users
-- **Primary: the founder.** Power listener, music 24/7, occasional radio/podcasts, likes
-  downloading music. Every decision is validated against this user first.
-- **Secondary (future):** privacy-minded Android users wanting one ad-free audio app.
+## Problem
 
-## 4. Vision statement
-One app opens to *your collection* — everything you listen to, online or offline —
-playing through one stable player, shaped the way you want it.
+Listeners often juggle separate apps for local music, radio, podcasts, and downloads. Those apps commonly add ads, trackers, accounts, and inconsistent playback. Fonamp aims to provide one focused player without those costs.
 
-## 5. Product principles (permanent constraints)
-1. **Customizable** — themes, tab/home order, EQ/audio, behavior (sleep timer, speed).
-2. **Expandable** — every audio source implements the `Source` contract
-   (browse / search / tracks / download); adding a source is days, not weeks.
-3. **Lightweight** — minimal dependency footprint, reasonable APK size, respectful battery.
-4. **Secure** — minimal permissions granted on demand, zero trackers, downloads in own storage.
-5. **Ad-free** — no ad SDK ever; an architectural constraint, not a promise.
+## Users
 
-## 6. Product areas
-| Area | Content | Slice |
-|------|---------|-------|
-| Collection | Local files + downloads + subscriptions, unified | v1 (local), v4 (downloads) |
-| Radio | Directory discovery (country/genre/tag), favorites | v1 |
-| Podcasts | Directory + subscriptions + offline episodes | v2 |
-| Downloads | URL audio download, watched folder, queue | v4 |
-| Providers | Self-hosted (Navidrome/Jellyfin/Plex), public streaming, Spotify last | v3 |
-| Player | Single Media3 player, background + notification, queue | v1 |
-| Personalization | Theme → tabs → EQ → behavior | v1 (theme), v2+ (rest) |
+- **Primary — founder/internal tester:** validates daily listening, direct-install releases, and a lightweight daily-driver workflow.
+- **Secondary — future:** privacy-minded Android users who want a small, ad-free player.
 
-## 7. Roadmap
-- **v1 — Foundation + Local + Radio.** Modular structure, `Source` contract, local via
-  MediaStore, radio discovery, favorites, background player, base settings + theme.
-- **v2 — Podcasts.** Directory + subscriptions, new-episode feed, offline episodes,
-  playback speed, sleep timer.
-- **v3 — External providers.** Self-hosted first, public streaming next, Spotify last
-  (SDK/DRM cost). One proposal per provider (auth, cache, offline, cost).
-- **v4 — Downloads.** Paste-URL audio download, watched folder, WorkManager queue.
+## Product principles
 
-## 8. Forever non-goals
-- Ads or ad/mediation SDKs, analytics/crash SDKs phoning home (self-hosted crash
-  reporting only if ever needed).
-- iOS port, own cloud backend/accounts for core features (self-hosted providers are
-  *user-owned* servers, not ours).
-- Social features, comments, sharing feeds.
+1. **Private by default** — no ads, analytics, or crash-reporting SDKs; permissions are requested only when needed.
+2. **One reliable player** — every shipped source uses the same Media3 background session.
+3. **Lightweight and inspectable** — a modular native app with explicit dependency and release gates.
+4. **Honest metadata** — show available artwork and fields; use generic fallbacks instead of fabricating data.
+5. **Expandable sources** — new sources implement the shared `Source` contract without coupling to the player.
+6. **Roadmap discipline** — planned product areas stay hidden and are never described as shipped.
 
-## 9. Success signals
-- Daily driver for the founder within v2 (replaces 3 apps).
-- v1 expandability proof: a mock `Source` implemented in <1 day.
-- Cold start to audio ≤3 taps; stable background playback; test suite green.
+## Product status
+
+| Area | Status through v0.0.13 | Next direction |
+| ---- | ------------------------ | -------------- |
+| Local collection | **Shipped:** MediaStore songs/artists/albums, local search, artwork, queue playback | History, richer library organization, downloads |
+| Radio | **Shipped:** directory discovery, 24-hour cache, curated tiles, name search, favorites, artwork | Improve resilience and discovery UX |
+| Player | **Shipped:** background playback, seek, next/previous, Up next, shuffle/repeat/speed, sleep timer, best-effort restore | Source-specific enhancements and richer queue policy |
+| Settings | **Shipped:** theme, directory-cache stats/clear, About, GitHub update check | Total storage reporting, richer cache controls |
+| Podcasts | **Planned** | Directory, subscriptions, episodes, offline playback |
+| Downloads | **Planned** | URL downloads, retry queue, watched folders |
+| External providers | **Planned** | Self-hosted providers first; evaluate public services separately |
+| Advanced customization | **Planned** | Tab order, EQ, richer behavior settings |
+
+## Roadmap
+
+### Shipped foundation
+
+- Modular local-library and RadioBrowser providers
+- One Media3 player with background service and notification controls
+- Room favorites and theme persistence
+- Material3 UI, designed loading/empty/offline/denied/error states
+- Direct-install release pipeline
+
+### Planned slices
+
+- **Podcasts:** directory, subscriptions, new episodes, offline episodes
+- **Providers:** Navidrome/Jellyfin/Plex proposals with explicit auth, cache, offline, and licensing tradeoffs
+- **Downloads:** paste-URL downloads, WorkManager queue, watched folders
+- **Personalization:** tab order, EQ, richer storage/cache controls
+
+## Non-goals
+
+- Advertising or ad/mediation SDKs
+- Analytics or crash SDKs that send data to third parties
+- Social feeds, comments, or social sharing
+- A Fonamp-operated cloud account or backend for core features
+- Silent APK installation; Android still shows the system installer
+
+## Success signals
+
+- Stable daily playback for the founder on a real device
+- Fast path to local or radio audio with designed recovery states
+- A new source can be added behind `provider/api` without changing `core/player` or bottom-tab navigation
+- CI remains green and the signed release stays below 40 MB
+- Documentation consistently distinguishes shipped behavior from proposals
