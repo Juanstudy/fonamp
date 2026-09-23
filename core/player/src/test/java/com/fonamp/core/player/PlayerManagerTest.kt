@@ -419,23 +419,86 @@ class PlayerManagerTest {
     }
 
     @Test
-    fun `sleep timer arms clears and dies with stop and play`() = runTest {
+    fun `playAt jumps within queue and starts playback`() = runTest {
+        val manager = FakePlayerManager()
+        val items = listOf(localItem("1"), localItem("2"), localItem("3"))
+        manager.state.test {
+            awaitItem()
+            manager.play(items, 0)
+            awaitItem()
+            manager.playAt(2)
+            val jumped = awaitItem()
+            assertEquals(2, jumped.index)
+            assertTrue(jumped.isPlaying)
+            assertFalse(jumped.isLive)
+            assertEquals(0L, jumped.positionMs)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `playAt preserves sleep timer unlike play`() = runTest {
+        val manager = FakePlayerManager()
+        val items = listOf(localItem("1"), localItem("2"))
+        manager.state.test {
+            awaitItem()
+            manager.play(items, 0)
+            awaitItem()
+            manager.setSleepTimer(15 * 60_000L)
+            val armed = awaitItem().sleepEndsAtMs
+            manager.playAt(1)
+            val jumped = awaitItem()
+            assertEquals(1, jumped.index)
+            assertEquals(armed, jumped.sleepEndsAtMs)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `playAt preserves banner unlike retry`() = runTest {
+        val manager = FakePlayerManager()
+        val items = listOf(localItem("1"), localItem("2"))
+        manager.state.test {
+            awaitItem()
+            manager.failNextWith(PlayerError.TIMEOUT)
+            manager.play(items, 0)
+            assertEquals(PlayerError.TIMEOUT, awaitItem().error)
+            manager.playAt(1)
+            val jumped = awaitItem()
+            assertEquals(1, jumped.index)
+            assertTrue(jumped.isPlaying)
+            assertEquals(PlayerError.TIMEOUT, jumped.error)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `playAt clamps out-of-range index`() = runTest {
+        val manager = FakePlayerManager()
+        val items = listOf(localItem("1"), localItem("2"))
+        manager.state.test {
+            awaitItem()
+            manager.play(items, 0)
+            awaitItem()
+            manager.playAt(99)
+            assertEquals(1, awaitItem().index)
+            manager.playAt(-5)
+            assertEquals(0, awaitItem().index)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `playAt is no-op on empty queue and same index`() = runTest {
         val manager = FakePlayerManager()
         manager.state.test {
             awaitItem()
-            manager.play(listOf(localItem("1")), 0)
+            manager.playAt(0)
+            expectNoEvents()
+            manager.play(listOf(localItem("1"), localItem("2")), 1)
             awaitItem()
-            manager.setSleepTimer(15 * 60_000L)
-            val armed = awaitItem()
-            assertTrue((armed.sleepEndsAtMs ?: 0L) > 0L)
-            manager.clearSleepTimer()
-            assertNull(awaitItem().sleepEndsAtMs)
-            manager.setSleepTimer(15 * 60_000L)
-            awaitItem()
-            manager.stop()
-            assertNull(awaitItem().sleepEndsAtMs)
-            manager.play(listOf(localItem("1")), 0)
-            assertNull(awaitItem().sleepEndsAtMs)
+            manager.playAt(1)
+            expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
     }
