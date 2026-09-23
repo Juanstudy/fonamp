@@ -52,4 +52,9 @@ Rama `fix/update-install-flow` desde `main` @ `8d8a842`. Archivos: `app/update` 
 - 2026-09-23: UP-3 hecho: snackbar en ambos Download. `./gradlew test` + `assembleDebug` verdes. Sin `POST_NOTIFICATIONS` las notificaciones se suprimen (sistema) y el diálogo UP-2 es el backstop.
 
 ## Next step
-Assess RDD del rango y reportar; device-check real (descargar release vieja → update) en celu por adb.
+Pushear rama + abrir PR (con `size:exception` o split: 456 líneas); device-check real del flujo update en celu por adb.
+
+## Review
+- `assess`: `risk: high` (`hot_path` ApkInstaller, señal `update`), `review_due: true` (`high_risk`), 8 paths / 456 líneas.
+- Preflight → `fresh_target_ready` → START → consent v3 (granted por el usuario) → lineage `review-9395015fbaefbc0c` (`reviewing`, 4 lentes: risk, resilience, readability, reliability).
+- Captura NO ejecutada: el transporte `Task` falla determinísticamente en este entorno (`free tier`, probado 3× en la sesión incl. post-sync; el rechazo ocurre antes de evaluar el prompt, así que el contenido no cambia el resultado). Lineaje preservado sin `abandon`; retomar tras reiniciar OpenCode por el launcher manejado. Candidato NO revisado: el delivery sigue siendo decisión explícita del usuario.
