@@ -90,6 +90,12 @@ fun PlayerSheet(
     onToggleShuffle: (() -> Unit)? = null,
     onCycleRepeat: (() -> Unit)? = null,
     onCycleSpeed: (() -> Unit)? = null,
+    /**
+     * Visible queue ("Up next"). Empty hides the section; rows are
+     * clickable only when [onSelectQueueItem] is non-null.
+     */
+    upNext: List<QueueRow> = emptyList(),
+    onSelectQueueItem: ((Int) -> Unit)? = null,
 ) {
     var showSleepDialog by remember { mutableStateOf(false) }
     // Minute-fresh remaining text while a timer is armed (radio has no
@@ -376,6 +382,12 @@ fun PlayerSheet(
                     )
                 }
             }
+        }
+        if (upNext.isNotEmpty()) {
+            UpNextSection(
+                rows = upNext,
+                onSelect = onSelectQueueItem,
+            )
         }
         if (showSleepDialog && onSetSleepTimer != null) {
             SleepTimerDialog(
