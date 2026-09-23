@@ -49,6 +49,10 @@ Rama `feat/queue-list` desde `main` @ `8d8a842`. Archivos: `core/ui` (`PlayerShe
 ## Review
 - `assess --base-ref 8d8a842 --committed-only`: `risk: medium` (`executable_change` FonampShell), `review_due: true`, `review_due_reason: slice_budget_reached` (453 > ~400).
 - STATUS preflight: `action: start`, `applicability: unrelated`, collect `intended_untracked_selection_required`. Este doc se commitea para salir del inventario untracked; los 4 restantes son ajenos al candidato.
+- `managed_assets_outdated` → `gentle-ai sync` (listo) → STATUS fresco → `fresh_target_ready` → START exacto → consent v3 (granted por el usuario vía `question`) → lineage `review-250207eef2418f99` (`reviewing`, lente `review-reliability`, target `sha256:f1c8bf...`, revision `sha256:bd6073...`).
+- Captura BLOQUEADA ×2: `Task/review-reliability` falla en transporte (`OpenCode's free tier can only be used from within OpenCode`), idéntico en reintento tras STATUS que reofrece el slot. Desvío propio: el prompt del reintento llevaba materialización agregada en vez del `provider_task.prompt` exacto (irrelevante al fallo: el transporte rechaza antes de evaluar el prompt, pero queda registrado).
+- Lineaje preservado SIN `abandon`: `gentle-ai sync` indica que el runtime de background queda `ready` tras reiniciar OpenCode por el launcher manejado (`/home/juan-arch/.gentle-ai/bin/opencode`); ahí el review puede retomarse con STATUS del mismo lineage.
+- Cobertura funcional efectiva: `./gradlew test` + `assembleDebug` verdes; 11 tests nuevos (6 UI + 5 player) + suites previas intactas.
 
 ## Next step
 Completar el collect de untracked para START; si los lentes no pueden correr (Task roto en este entorno), dejar review en blocked con evidencia y pedir decisión de push/PR.
