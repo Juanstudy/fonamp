@@ -29,6 +29,7 @@ data class StationDto(
     val bitrate: Int? = null,
     val codec: String? = null,
     val country: String? = null,
+    val favicon: String? = null,
     /** Real API sends tags as one comma-separated string. */
     val tags: String? = null,
 ) {

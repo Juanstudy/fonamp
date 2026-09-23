@@ -135,6 +135,7 @@ private fun StationDto.toAudioItem(): AudioItem {
         album = null,
         durationMs = null,
         streamUri = resolvedStreamUrl,
+        artworkUri = favicon?.takeIf { it.isNotBlank() },
         bitrate = bitrate?.takeIf { it > 0 },
         codec = codec?.takeIf { it.isNotBlank() },
         stationUuid = stationuuid,

@@ -12,7 +12,7 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [FavoriteStation::class, ThemePref::class],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class FonampDatabase : RoomDatabase() {
@@ -20,4 +20,12 @@ abstract class FonampDatabase : RoomDatabase() {
     abstract fun favoriteDao(): FavoriteDao
 
     abstract fun themeDao(): ThemeDao
+
+    companion object {
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE favorite_stations ADD COLUMN artworkUri TEXT")
+            }
+        }
+    }
 }

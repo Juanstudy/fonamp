@@ -81,7 +81,9 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): FonampDatabase =
-        Room.databaseBuilder(context, FonampDatabase::class.java, "fonamp.db").build()
+        Room.databaseBuilder(context, FonampDatabase::class.java, "fonamp.db")
+            .addMigrations(FonampDatabase.MIGRATION_1_2)
+            .build()
 
     @Provides
     fun provideFavoriteDao(db: FonampDatabase): FavoriteDao = db.favoriteDao()

@@ -7,6 +7,6 @@ class DatabaseScaffoldTest {
     @Test
     fun `database name and v1 version are stable`() {
         assertEquals("fonamp.db", DatabaseScaffold.NAME)
-        assertEquals(1, DatabaseScaffold.VERSION)
+        assertEquals(2, DatabaseScaffold.VERSION)
     }
 }

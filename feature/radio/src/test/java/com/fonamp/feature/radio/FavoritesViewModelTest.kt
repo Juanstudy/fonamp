@@ -50,6 +50,7 @@ class FavoritesViewModelTest {
         stationUuid = uuid,
         name = name,
         streamUrl = "http://example.com/$uuid",
+            artworkUri = null,
         country = "Germany",
         tagsCsv = "jazz",
         bitrate = 128,
