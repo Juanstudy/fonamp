@@ -6,5 +6,5 @@ package com.fonamp.core.database
  */
 object DatabaseScaffold {
     const val NAME = "fonamp.db"
-    const val VERSION = 2
+    const val VERSION = 3
 }

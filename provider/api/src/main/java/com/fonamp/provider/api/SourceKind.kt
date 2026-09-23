@@ -1,3 +1,3 @@
 package com.fonamp.provider.api
 
-enum class SourceKind { LOCAL, RADIO }
+enum class SourceKind { LOCAL, RADIO, PODCAST }

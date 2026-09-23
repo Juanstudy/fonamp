@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.room.Room
 import com.fonamp.core.database.FavoriteDao
+import com.fonamp.core.database.PodcastSubscriptionDao
 import com.fonamp.core.database.FonampDatabase
 import com.fonamp.core.database.ThemeDao
 import com.fonamp.core.network.DirectoryCache
@@ -82,7 +83,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): FonampDatabase =
         Room.databaseBuilder(context, FonampDatabase::class.java, "fonamp.db")
-            .addMigrations(FonampDatabase.MIGRATION_1_2)
+            .addMigrations(FonampDatabase.MIGRATION_1_2, FonampDatabase.MIGRATION_2_3)
             .build()
 
     @Provides
@@ -104,6 +105,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideGithubReleasesClient(): GithubReleasesClient = GithubReleasesClient()
+    @Provides
+    fun providePodcastSubscriptionDao(db: FonampDatabase): PodcastSubscriptionDao = db.podcastSubscriptionDao()
 }
 
 /**
