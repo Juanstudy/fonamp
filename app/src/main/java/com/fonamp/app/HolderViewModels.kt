@@ -132,3 +132,20 @@ class UpdateHolderViewModel @Inject constructor(
         )
     }
 }
+
+@HiltViewModel
+class PodcastHolderViewModel @Inject constructor(
+    private val sources: Set<@JvmSuppressWildcards Source>,
+    private val dao: com.fonamp.core.database.PodcastSubscriptionDao,
+    private val player: PlayerManager,
+) : ViewModel() {
+    val podcast: com.fonamp.feature.podcast.PodcastViewModel by lazy {
+        com.fonamp.feature.podcast.PodcastViewModel(
+            source = resolveSource(sources, "podcast"),
+            dao = dao,
+            player = player,
+            scope = viewModelScope,
+            io = kotlinx.coroutines.Dispatchers.IO,
+        )
+    }
+}

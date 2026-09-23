@@ -16,8 +16,9 @@ object FonampRoutes {
     const val STATIONS_BASE = "radio/stations"
     const val FAVORITES = "favorites"
     const val SETTINGS = "settings"
+    const val PODCAST = "podcast"
 
-    val all: List<String> = listOf(COLLECTION, DISCOVER, STATIONS_BASE, FAVORITES, SETTINGS)
+    val all: List<String> = listOf(COLLECTION, DISCOVER, STATIONS_BASE, FAVORITES, SETTINGS, PODCAST)
 
     fun stationsRoute(filter: String): String = "$STATIONS_BASE?filter=$filter"
 }
@@ -29,6 +30,7 @@ object FonampTabs {
         FonampTab(FonampRoutes.COLLECTION, "Collection"),
         FonampTab(FonampRoutes.DISCOVER, "Radio"),
         FonampTab(FonampRoutes.FAVORITES, "Favorites"),
+        FonampTab(FonampRoutes.PODCAST, "Podcasts"),
         FonampTab(FonampRoutes.SETTINGS, "Settings"),
     )
 }

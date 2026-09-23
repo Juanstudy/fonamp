@@ -246,6 +246,10 @@ fun FonampRoot(
                         val holder = hiltViewModel<RadioHolderViewModel>()
                         FavoritesRoute(viewModel = holder.favoritesVm)
                     }
+                    composable(FonampRoutes.PODCAST) {
+                        val holder = androidx.hilt.navigation.compose.hiltViewModel<PodcastHolderViewModel>()
+                        com.fonamp.feature.podcast.PodcastScreen(viewModel = holder.podcast)
+                    }
                     composable(FonampRoutes.SETTINGS) {
                         val holder = hiltViewModel<SettingsHolderViewModel>()
                         SettingsRoute(

@@ -2,6 +2,7 @@ package com.fonamp.app
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.fonamp.core.ui.AppIcons
@@ -15,6 +16,7 @@ object TabIcon {
         FonampRoutes.COLLECTION -> AppIcons.MusicNote
         FonampRoutes.DISCOVER -> AppIcons.Radio
         FonampRoutes.FAVORITES -> Icons.Filled.Favorite
+        FonampRoutes.PODCAST -> Icons.Filled.Search
         else -> Icons.Filled.Settings
     }
 }

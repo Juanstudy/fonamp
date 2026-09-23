@@ -31,20 +31,13 @@ android {
     buildFeatures {
         compose = true
     }
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
-    }
 }
 
 dependencies {
     implementation(project(":provider:api"))
-    implementation(project(":provider:podcast"))
     implementation(project(":core:player"))
     implementation(project(":core:ui"))
     implementation(project(":core:database"))
-    implementation(project(":core:network"))
 
     implementation(libs.media3.common)
     implementation(libs.lifecycle.runtime.compose)
