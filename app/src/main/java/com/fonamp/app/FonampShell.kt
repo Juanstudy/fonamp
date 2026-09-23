@@ -56,6 +56,7 @@ import com.fonamp.core.ui.FonampTheme
 import com.fonamp.core.ui.MiniPlayer
 import com.fonamp.core.ui.MiniPlayerState
 import com.fonamp.core.ui.PlayerSheet
+import com.fonamp.core.ui.QueueRow
 import com.fonamp.core.ui.SourceBadgeKind
 import com.fonamp.feature.library.CollectionRoute
 import com.fonamp.feature.radio.DiscoverRoute
@@ -254,6 +255,18 @@ fun FonampRoot(
                 val favoritesVm = hiltViewModel<RadioHolderViewModel>().favoritesVm
                 val favoriteIds by favoritesVm.favoriteIds.collectAsStateWithLifecycle()
                 val currentStationUuid = current?.stationUuid()
+                // core/ui stays decoupled from MediaItem: map the queue to
+                // primitives here, preserving the queue index for onSelect.
+                val queueRows = playerState.queue.mapIndexed { index, item ->
+                    QueueRow(
+                        title = item.mediaMetadata?.title?.toString()?.takeIf { it.isNotBlank() }
+                            ?: "Unknown",
+                        subtitle = item.mediaMetadata?.artist?.toString(),
+                        artworkUri = item.mediaMetadata?.artworkUri?.toString(),
+                        durationMs = item.durationMs(),
+                        isActive = index == playerState.index,
+                    )
+                }
                 PlayerSheet(
                     title = current?.mediaMetadata?.title?.toString() ?: "Nothing playing",
                     subtitle = current?.mediaMetadata?.artist?.toString(),
@@ -292,6 +305,8 @@ fun FonampRoot(
                     onToggleShuffle = player::toggleShuffle,
                     onCycleRepeat = player::cycleRepeat,
                     onCycleSpeed = player::cycleSpeed,
+                    upNext = queueRows,
+                    onSelectQueueItem = player::playAt,
                 )
             }
         }
