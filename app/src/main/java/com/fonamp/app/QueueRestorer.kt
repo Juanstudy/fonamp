@@ -49,6 +49,7 @@ class QueueRestorer @Inject constructor(
                     val audio = (result as? SourceResult.Ok)?.v ?: continue
                     audio.mapNotNullTo(this) { runCatching { source.streamOf(it) }.getOrNull() }
                 }
+                SourceKind.PODCAST -> {}
                 SourceKind.RADIO -> {
                     CuratedStations.browseCurated().mapTo(this, ::radioMediaItem)
                 }

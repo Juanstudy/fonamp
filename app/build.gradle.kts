@@ -77,6 +77,8 @@ dependencies {
     // Wiring only (design §1/§9): features + core + providers. No feature→feature edges.
     implementation(project(":feature:library"))
     implementation(project(":feature:radio"))
+    implementation(project(":feature:podcast"))
+    implementation(project(":provider:podcast"))
     implementation(project(":feature:settings"))
     implementation(project(":core:player"))
     implementation(project(":core:ui"))

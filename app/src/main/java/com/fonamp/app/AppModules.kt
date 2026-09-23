@@ -51,6 +51,15 @@ object SourceModule {
 
     @Provides
     @IntoSet
+    fun providePodcastSource(): Source {
+        
+        val api = com.fonamp.provider.podcast.PodcastNetwork.createItunesApi()
+        val parser = com.fonamp.provider.podcast.PodcastNetwork.createRssParser()
+        return com.fonamp.provider.podcast.PodcastSource(api, parser)
+    }
+
+    @Provides
+    @IntoSet
     fun provideRadioSource(
         client: RadioBrowserClient,
         cache: DirectoryCache,

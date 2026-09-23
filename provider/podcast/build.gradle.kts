@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.agp.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -34,6 +35,11 @@ dependencies {
     implementation(project(":core:network"))
     implementation(libs.media3.common)
     implementation(libs.coroutines.core)
+    
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.serialization.converter)
+    implementation(libs.okhttp)
+    implementation(libs.serialization.json)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
