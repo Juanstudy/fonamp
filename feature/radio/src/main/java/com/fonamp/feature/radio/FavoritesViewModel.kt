@@ -123,6 +123,7 @@ class FavoritesViewModel(
                         stationUuid = uuid,
                         name = item.mediaMetadata.title?.toString()?.takeIf { it.isNotBlank() } ?: uuid,
                         streamUrl = streamUrl,
+                        artworkUri = item.mediaMetadata.artworkUri?.toString(),
                         country = item.mediaMetadata.extras?.getString(SourceExtras.KEY_COUNTRY),
                         tagsCsv = null,
                         bitrate = null,
@@ -147,6 +148,7 @@ private fun FavoriteStation.toAudioItem() = AudioItem(
         .takeIf { it.isNotEmpty() }
         ?.joinToString(", "),
     streamUri = streamUrl,
+    artworkUri = artworkUri,
     bitrate = bitrate,
     codec = codec,
     stationUuid = stationUuid,

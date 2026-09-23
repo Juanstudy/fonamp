@@ -16,6 +16,7 @@ data class FavoriteStation(
     @PrimaryKey val stationUuid: String,
     val name: String,
     val streamUrl: String,
+    val artworkUri: String?,
     val country: String?,
     val tagsCsv: String?,
     val bitrate: Int?,

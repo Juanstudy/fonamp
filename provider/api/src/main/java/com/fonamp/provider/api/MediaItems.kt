@@ -51,10 +51,10 @@ fun radioMediaItem(item: AudioItem): MediaItem {
         .setIsPlayable(true)
         .setIsBrowsable(false)
         .setExtras(extras)
-        .build()
+    item.artworkUri?.let { metadata.setArtworkUri(Uri.parse(it)) }
     return MediaItem.Builder()
         .setMediaId("radio:${item.stationUuid ?: item.stableId}")
         .setUri(item.streamUri)
-        .setMediaMetadata(metadata)
+        .setMediaMetadata(metadata.build())
         .build()
 }

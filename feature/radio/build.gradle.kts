@@ -55,6 +55,7 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
+    implementation(libs.coil.compose)
     implementation("androidx.compose.material:material-icons-core")
     // Extended-only glyphs (Radio/Public/Tag, …) come from core-ui
     // AppIcons; no material-icons-extended dependency.

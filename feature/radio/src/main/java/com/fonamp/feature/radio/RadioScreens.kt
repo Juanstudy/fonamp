@@ -4,6 +4,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -199,7 +204,7 @@ fun DiscoverScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Icon(AppIcons.Radio, contentDescription = null)
+                            RadioArtwork(station.artworkUri)
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(text = station.title, style = MaterialTheme.typography.bodyLarge)
                                 stationMeta(station)?.let {
@@ -302,7 +307,7 @@ fun CuratedSection(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Icon(AppIcons.Radio, contentDescription = null)
+                RadioArtwork(station.artworkUri)
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = station.title, style = MaterialTheme.typography.bodyLarge)
                     stationMeta(station)?.let {
@@ -381,7 +386,7 @@ fun StationsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(AppIcons.Radio, contentDescription = null)
+                        RadioArtwork(station.artworkUri)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = station.title, style = MaterialTheme.typography.bodyLarge)
                             stationMeta(station)?.let {
@@ -459,7 +464,7 @@ fun FavoritesScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Icon(Icons.Filled.Place, contentDescription = null)
+                        RadioArtwork(favorite.artworkUri, fallback = Icons.Filled.Place)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(text = favorite.name, style = MaterialTheme.typography.bodyLarge)
                             favorite.country?.let {
@@ -573,4 +578,22 @@ fun FavoritesRoute(viewModel: FavoritesViewModel, modifier: Modifier = Modifier)
         onUndo = viewModel::undo,
         modifier = modifier,
     )
+}
+
+@Composable
+private fun RadioArtwork(
+    artworkUri: String?,
+    modifier: Modifier = Modifier,
+    fallback: androidx.compose.ui.graphics.vector.ImageVector = AppIcons.Radio
+) {
+    if (artworkUri != null) {
+        AsyncImage(
+            model = artworkUri,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.size(24.dp).clip(RoundedCornerShape(4.dp))
+        )
+    } else {
+        Icon(fallback, contentDescription = null, modifier = modifier)
+    }
 }

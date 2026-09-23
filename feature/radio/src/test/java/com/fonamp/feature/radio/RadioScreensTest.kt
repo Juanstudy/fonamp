@@ -306,6 +306,7 @@ class RadioScreensTest {
         val fav = FavoriteStation(
             stationUuid = "uuid-1", name = "Jazz FM",
             streamUrl = "http://example.com/uuid-1", country = "Germany",
+            artworkUri = null,
             tagsCsv = "jazz", bitrate = 128, codec = "MP3", favoritedAt = 1L,
         )
         compose.setContent {
