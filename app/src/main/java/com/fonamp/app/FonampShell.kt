@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
@@ -20,16 +21,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,6 +72,8 @@ import com.fonamp.feature.settings.UpdateAvailableDialog
 import com.fonamp.feature.settings.UpdateUiState
 import com.fonamp.provider.api.BrowseQuery
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+import java.io.File
 
 /**
  * Slice I: app shell (design §7, scaffold Req 4, player Req 2).
@@ -114,6 +120,7 @@ fun FonampRoot(
         val navController = rememberNavController()
         val playerState by player.state.collectAsStateWithLifecycle()
         val snackbar = remember { SnackbarHostState() }
+        val downloadScope = rememberCoroutineScope()
         var showSheet by rememberSaveable { mutableStateOf(false) }
         var miniDismissed by rememberSaveable { mutableStateOf(false) }
 
@@ -141,6 +148,17 @@ fun FonampRoot(
         val updateState by updateHolder.updates.state.collectAsStateWithLifecycle()
         LaunchedEffect(Unit) {
             updateHolder.updates.checkForUpdates(version)
+        }
+
+        // Stranded update pickup: a download that finished while the app
+        // was dead (or whose completion notification was denied) is
+        // re-offered once, and only when the apk is actually newer than
+        // this build — an already-installed apk is never re-offered.
+        var pendingUpdate by remember { mutableStateOf<File?>(null) }
+        LaunchedEffect(Unit) {
+            pendingUpdate = runCatching {
+                installer.pendingUpdateNewerThanInstalled(BuildConfig.VERSION_CODE.toLong())
+            }.getOrNull()
         }
 
         Scaffold(
@@ -237,6 +255,9 @@ fun FonampRoot(
                             updates = holder.updates,
                             onDownloadUpdate = { url, _ ->
                                 installer.enqueueUpdate(url, ApkInstaller.UPDATE_FILE_NAME)
+                                downloadScope.launch {
+                                    snackbar.showSnackbar(DOWNLOAD_STARTED_MESSAGE)
+                                }
                             },
                         )
                     }
@@ -319,8 +340,26 @@ fun FonampRoot(
                 onDownload = {
                     installer.enqueueUpdate(availableUpdate.apkUrl, ApkInstaller.UPDATE_FILE_NAME)
                     updateHolder.updates.dismiss()
+                    downloadScope.launch {
+                        snackbar.showSnackbar(DOWNLOAD_STARTED_MESSAGE)
+                    }
                 },
                 onLater = { updateHolder.updates.dismiss() },
+            )
+        }
+
+        val readyUpdate = pendingUpdate
+        if (readyUpdate != null) {
+            UpdateReadyDialog(
+                onInstall = {
+                    installer.installNow(readyUpdate)
+                    installer.clearTracking()
+                    pendingUpdate = null
+                },
+                onLater = {
+                    installer.clearTracking()
+                    pendingUpdate = null
+                },
             )
         }
     }
@@ -434,10 +473,42 @@ private fun parseFilter(filter: String): Pair<BrowseQuery, String>? {
     }
 }
 
+/** Snackbar confirmation when an update download starts (UP-3). */
+private const val DOWNLOAD_STARTED_MESSAGE =
+    "Downloading update — we'll notify you when it's ready."
+
+/** Re-offer for a stranded ready apk (UP-2 cold-start pickup). */@Composable
+private fun UpdateReadyDialog(
+    onInstall: () -> Unit,
+    onLater: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onLater,
+        modifier = Modifier.testTag("update-ready-dialog"),
+        title = { Text("Update ready to install") },
+        text = { Text("A downloaded Fonamp update is waiting. Install it now?") },
+        confirmButton = {
+            TextButton(
+                onClick = onInstall,
+                modifier = Modifier.testTag("update-ready-install"),
+            ) {
+                Text("Install")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onLater,
+                modifier = Modifier.testTag("update-ready-later"),
+            ) {
+                Text("Later")
+            }
+        },
+    )
+}
+
 /** Notification permission: lazy on first playback, tolerated failure. */
 @Composable
-private fun RequestNotificationOnce(playerHasQueue: Boolean) {
-    if (Build.VERSION.SDK_INT < 33) return
+private fun RequestNotificationOnce(playerHasQueue: Boolean) {    if (Build.VERSION.SDK_INT < 33) return
     var asked by rememberSaveable { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),

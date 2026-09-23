@@ -5,7 +5,9 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import androidx.core.content.FileProvider
 import java.io.File
@@ -17,8 +19,10 @@ import java.io.File
  *   download outliving the process is still recognized on next launch.
  * - [finishedDownload] resolves the tracked download to a file only when
  *   the system reports it successful — anything else is "not ready".
- * - [installNow] opens the platform installer; Android always confirms
- *   with the user, silent install is not possible by design.
+ * - [installIntent] builds the platform installer intent; [installNow]
+ *   fires it for foreground flows. Background flows (the download-complete
+ *   receiver) must NOT start it directly — background activity starts are
+ *   blocked since Android 10 — they post it as a notification tap instead.
  */
 class ApkInstaller(
     private val appContext: Context,
@@ -61,20 +65,34 @@ class ApkInstaller(
     }
 
     /**
-     * Open the system installer for [apkFile]. Returns false when the file
-     * is missing or nothing handles the install intent (unknown sources
-     * locked down with no handler) — callers surface that, never crash.
+     * Installer intent for [apkFile], null when the file is missing or the
+     * FileProvider cannot serve it. Shared by [installNow] and the
+     * completion notification (whose tap fires it directly — allowed even
+     * from background, unlike a receiver-started activity).
      */
-    fun installNow(apkFile: File): Boolean {
-        if (!apkFile.exists()) return false
-        val uri = FileProvider.getUriForFile(
-            appContext,
-            "${appContext.packageName}.fileprovider",
-            apkFile,
-        )
-        val intent = Intent(Intent.ACTION_VIEW)
+    fun installIntent(apkFile: File): Intent? {
+        if (!apkFile.exists()) return null
+        val uri = runCatching {
+            FileProvider.getUriForFile(
+                appContext,
+                "${appContext.packageName}.fileprovider",
+                apkFile,
+            )
+        }.getOrNull() ?: return null
+        return Intent(Intent.ACTION_VIEW)
             .setDataAndType(uri, APK_MIME)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    /**
+     * Open the system installer for [apkFile]. Returns false when the file
+     * is missing, unservable, or nothing handles the install intent
+     * (unknown sources locked down with no handler) — callers surface
+     * that, never crash. Foreground flows only; Android always confirms
+     * with the user, silent install is not possible by design.
+     */
+    fun installNow(apkFile: File): Boolean {
+        val intent = installIntent(apkFile) ?: return false
         return try {
             appContext.startActivity(intent)
             true
@@ -88,6 +106,34 @@ class ApkInstaller(
         prefs.edit().remove(KEY_DOWNLOAD_ID).remove(KEY_FILE_NAME).apply()
     }
 
+    /**
+     * Ready apk strictly newer than [installedVersionCode], null otherwise
+     * (nothing tracked, unfinished/failed, file gone, unparsable archive,
+     * or archive not newer). Cold-start pickup uses this so an already
+     * installed (or stale) apk is never re-offered. The archive lookup is
+     * injectable so unit tests don't depend on PackageManager shadows.
+     */
+    fun pendingUpdateNewerThanInstalled(
+        installedVersionCode: Long,
+        finished: File? = finishedDownload(),
+        archiveVersionCodeOf: (String) -> Long? = { path -> archiveVersionCode(path) },
+    ): File? {
+        val apk = finished ?: return null
+        val archiveCode = archiveVersionCodeOf(apk.absolutePath) ?: return null
+        return apk.takeIf { isArchiveNewer(archiveCode, installedVersionCode) }
+    }
+
+    private fun archiveVersionCode(path: String): Long? = runCatching {
+        val pm = appContext.packageManager
+        val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getPackageArchiveInfo(path, PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageArchiveInfo(path, 0)
+        }
+        info?.longVersionCode
+    }.getOrNull()
+
     private fun downloadStatus(id: Long): Int? {
         val cursor = downloads.query(DownloadManager.Query().setFilterById(id)) ?: return null
         return cursor.use {
@@ -98,6 +144,9 @@ class ApkInstaller(
 
     companion object {
         const val APK_MIME = "application/vnd.android.package-archive"
+        /** Pure staleness rule so the pickup policy is unit-testable. */
+        internal fun isArchiveNewer(archiveVersionCode: Long, installedVersionCode: Long): Boolean =
+            archiveVersionCode > installedVersionCode
         const val UPDATES_DIR = "updates"
         /** Constant file name: re-downloads overwrite, never accumulate. */
         const val UPDATE_FILE_NAME = "fonamp-update.apk"
