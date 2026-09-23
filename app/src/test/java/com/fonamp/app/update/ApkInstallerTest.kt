@@ -3,6 +3,7 @@ package com.fonamp.app.update
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -58,5 +59,27 @@ class ApkInstallerTest {
 
         assertEquals(ApkInstaller.NO_ID, installer.trackedDownloadId)
         assertNull(installer.finishedDownload())
+    }
+
+    @Test
+    fun `pending update offered only when archive is newer`() {
+        val installer = installer()
+        val apk = File.createTempFile("fonamp-update", ".apk")
+        try {
+            assertEquals(apk, installer.pendingUpdateNewerThanInstalled(11L, finished = apk) { 12L })
+            assertNull(installer.pendingUpdateNewerThanInstalled(12L, finished = apk) { 12L })
+            assertNull(installer.pendingUpdateNewerThanInstalled(13L, finished = apk) { 12L })
+            assertNull(installer.pendingUpdateNewerThanInstalled(11L, finished = apk) { null })
+            assertNull(installer.pendingUpdateNewerThanInstalled(11L, finished = null) { 12L })
+        } finally {
+            apk.delete()
+        }
+    }
+
+    @Test
+    fun `archive newness predicate`() {
+        assertTrue(ApkInstaller.isArchiveNewer(12L, 11L))
+        assertFalse(ApkInstaller.isArchiveNewer(11L, 11L))
+        assertFalse(ApkInstaller.isArchiveNewer(10L, 11L))
     }
 }

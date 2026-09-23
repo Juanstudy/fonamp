@@ -5,7 +5,9 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import androidx.core.content.FileProvider
 import java.io.File
@@ -104,6 +106,34 @@ class ApkInstaller(
         prefs.edit().remove(KEY_DOWNLOAD_ID).remove(KEY_FILE_NAME).apply()
     }
 
+    /**
+     * Ready apk strictly newer than [installedVersionCode], null otherwise
+     * (nothing tracked, unfinished/failed, file gone, unparsable archive,
+     * or archive not newer). Cold-start pickup uses this so an already
+     * installed (or stale) apk is never re-offered. The archive lookup is
+     * injectable so unit tests don't depend on PackageManager shadows.
+     */
+    fun pendingUpdateNewerThanInstalled(
+        installedVersionCode: Long,
+        finished: File? = finishedDownload(),
+        archiveVersionCodeOf: (String) -> Long? = { path -> archiveVersionCode(path) },
+    ): File? {
+        val apk = finished ?: return null
+        val archiveCode = archiveVersionCodeOf(apk.absolutePath) ?: return null
+        return apk.takeIf { isArchiveNewer(archiveCode, installedVersionCode) }
+    }
+
+    private fun archiveVersionCode(path: String): Long? = runCatching {
+        val pm = appContext.packageManager
+        val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getPackageArchiveInfo(path, PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageArchiveInfo(path, 0)
+        }
+        info?.longVersionCode
+    }.getOrNull()
+
     private fun downloadStatus(id: Long): Int? {
         val cursor = downloads.query(DownloadManager.Query().setFilterById(id)) ?: return null
         return cursor.use {
@@ -114,6 +144,9 @@ class ApkInstaller(
 
     companion object {
         const val APK_MIME = "application/vnd.android.package-archive"
+        /** Pure staleness rule so the pickup policy is unit-testable. */
+        internal fun isArchiveNewer(archiveVersionCode: Long, installedVersionCode: Long): Boolean =
+            archiveVersionCode > installedVersionCode
         const val UPDATES_DIR = "updates"
         /** Constant file name: re-downloads overwrite, never accumulate. */
         const val UPDATE_FILE_NAME = "fonamp-update.apk"
