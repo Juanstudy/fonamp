@@ -14,6 +14,12 @@
   <img src="https://img.shields.io/badge/targetSdk-35-blue" alt="targetSdk 35">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Gentleman-Programming/gentle-ai">
+    <img width="220" src="https://raw.githubusercontent.com/Gentleman-Programming/gentle-ai/main/docs/assets/brand/built-with-gentle-ai.png" alt="Built with Gentle-AI" />
+  </a>
+</p>
+
 **fonamp** is a lightweight native Android player for an on-device MediaStore library and internet radio from RadioBrowser. It has no ads, trackers, analytics, or Firebase.
 
 > [!NOTE]
