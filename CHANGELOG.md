@@ -4,6 +4,8 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). R
 
 ## [Unreleased]
 
+## [0.0.15] — 2026-09-28
+
 ### Added
 - Macrobenchmark module with a reproducible `ColdStartupBenchmark` to measure cold-start performance against the 2-second target.
 - Explicit 10-second playback-stall timeout: player aborts with a network error if stuck buffering for too long.

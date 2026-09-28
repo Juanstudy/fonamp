@@ -28,8 +28,8 @@ android {
         applicationId = "com.fonamp.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 13
-        versionName = "0.0.13"
+        versionCode = 15
+        versionName = "0.0.15"
     }
 
     signingConfigs {
