@@ -28,8 +28,8 @@ android {
         applicationId = "com.fonamp.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.0.15"
+        versionCode = 16
+        versionName = "0.0.16"
     }
 
     signingConfigs {
@@ -106,6 +106,7 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.hilt.android)
+    implementation(libs.coil)
     ksp(libs.hilt.compiler)
 
     testImplementation(libs.junit)
