@@ -77,7 +77,7 @@
 | Size | Release R8 + resource shrinking; hard `<40 MB`; last recorded release size 7.3 MB on 2026-09-12; debug is monitored |
 | Reliability | Typed source/player errors, explicit retry, best-effort paused queue restore |
 | Accessibility | Playback actions use at least 48dp targets and content descriptions; dynamic-text review remains ongoing |
-| Performance | Lists and cache behavior exist, but the under-two-second cold-start target has no current reproducible measurement |
+| Performance | Lists and cache behavior exist; cold-start target is < 2s, now measurable reproducibly via `:macrobenchmark` |
 
 ## Current constraints
 

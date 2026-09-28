@@ -9,7 +9,7 @@ fail() { echo "FAIL: $1"; FAIL=1; }
 pass() { echo "PASS: $1"; }
 
 # 1. settings.gradle.kts includes all 12 modules
-EXPECTED_MODULES=":app :core:player :core:network :core:database :core:permissions :core:ui :provider:api :provider:radio :provider:local :feature:library :feature:radio :feature:settings"
+EXPECTED_MODULES=":app :core:player :core:network :core:database :core:permissions :core:ui :provider:api :provider:radio :provider:local :feature:library :feature:radio :feature:settings :macrobenchmark"
 if [ -f "$ROOT/settings.gradle.kts" ]; then
   MISSING=""
   for m in $EXPECTED_MODULES; do

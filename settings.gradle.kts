@@ -26,4 +26,5 @@ include(
     ":feature:library",
     ":feature:radio",
     ":feature:settings",
+    ":macrobenchmark",
 )

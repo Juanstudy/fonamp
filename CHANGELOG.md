@@ -5,6 +5,7 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). R
 ## [Unreleased]
 
 ### Added
+- Macrobenchmark module with a reproducible `ColdStartupBenchmark` to measure cold-start performance against the 2-second target.
 - Explicit 10-second playback-stall timeout: player aborts with a network error if stuck buffering for too long.
 - Total app-storage reporting in Settings, showing the sizes of the directory cache, artwork cache, database, and preferences.
 - Clear all caches action in Settings to evict both directory and artwork caches.
