@@ -4,6 +4,9 @@ This project follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). R
 
 ## [Unreleased]
 
+### Added
+- Explicit 10-second playback-stall timeout: player aborts with a network error if stuck buffering for too long.
+
 ### Changed
 - Synchronized current documentation with shipped behavior through v0.0.13 and separated future roadmap work from current product claims.
 

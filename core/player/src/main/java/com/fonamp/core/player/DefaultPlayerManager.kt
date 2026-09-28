@@ -60,6 +60,12 @@ class DefaultPlayerManager @Inject constructor(
      */
     private val sleepTimer = SleepTimer(scope, onExpire = { stop() })
 
+    /**
+     * Stalled-stream threshold timer (Req PLY-7): enforces a strict 10s timeout
+     * when the player is stuck in STATE_BUFFERING without throwing an IO error.
+     */
+    private var stallJob: Job? = null
+
     @Volatile
     private var controller: MediaController? = null
 
@@ -84,7 +90,40 @@ class DefaultPlayerManager @Inject constructor(
         positionJob = null
     }
 
+    private fun startStallTimer() {
+        if (stallJob?.isActive == true) return
+        stallJob = scope.launch {
+            delay(10_000L)
+            // Stall threshold exceeded: fail as timeout.
+            controller?.stop()
+            _state.update { it.copy(isPlaying = false, error = PlayerError.TIMEOUT, icyTitle = null) }
+        }
+    }
+
+    private fun stopStallTimer() {
+        stallJob?.cancel()
+        stallJob = null
+    }
+
     private val listener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            val c = controller ?: return
+            if (playbackState == Player.STATE_BUFFERING && c.playWhenReady) {
+                startStallTimer()
+            } else {
+                stopStallTimer()
+            }
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            val c = controller ?: return
+            if (playWhenReady && c.playbackState == Player.STATE_BUFFERING) {
+                startStallTimer()
+            } else {
+                stopStallTimer()
+            }
+        }
+
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             val currentPos = controller?.currentPosition?.coerceAtLeast(0L) ?: _state.value.positionMs
             _state.update { it.copy(isPlaying = isPlaying, positionMs = currentPos) }
@@ -196,6 +235,7 @@ class DefaultPlayerManager @Inject constructor(
 
     override fun stop() {
         stopPositionTicker()
+        stopStallTimer()
         sleepTimer.clear()
         controller?.stop()
         _state.update {
@@ -340,6 +380,7 @@ class DefaultPlayerManager @Inject constructor(
     /** Best-effort release; the service owns the real player lifetime. */
     fun release() {
         stopPositionTicker()
+        stopStallTimer()
         sleepTimer.clear()
         scope.cancel()
         runCatching { controller?.removeListener(listener) }

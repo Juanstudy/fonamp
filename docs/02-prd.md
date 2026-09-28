@@ -45,7 +45,7 @@
 | PLY-4 | Offer shuffle, repeat off/all/one, playback speed, and a one-shot sleep timer | Shipped |
 | PLY-5 | Surface stream errors inline with retry without freezing the rest of the UI | Shipped |
 | PLY-6 | Restore queue and position best-effort after process death, paused rather than auto-playing | Shipped |
-| PLY-7 | Enforce and measure a specific 10-second stalled-stream threshold | Open |
+| PLY-7 | Enforce and measure a specific 10-second stalled-stream threshold | Shipped |
 
 ### Podcasts, downloads, and providers
 
@@ -90,7 +90,7 @@
 ## Open product decisions
 
 1. Public-store distribution and release-signing policy beyond internal APK testing.
-2. Playback-stall timeout target and how to measure it.
+~~2. Playback-stall timeout target and how to measure it.~~ (Resolved: 10s strict timeout enforcing `PlayerError.TIMEOUT` when stuck in `STATE_BUFFERING`)
 3. Queue persistence scope and retention policy.
 4. Artwork cache ownership, eviction, and Settings controls.
 5. External-provider order and licensing review.
