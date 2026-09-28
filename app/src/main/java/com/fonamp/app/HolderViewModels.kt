@@ -1,7 +1,9 @@
 package com.fonamp.app
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import coil.imageLoader
 import com.fonamp.core.database.FavoriteDao
 import com.fonamp.core.database.ThemeDao
 import com.fonamp.core.network.DirectoryCache
@@ -15,6 +17,8 @@ import com.fonamp.feature.settings.SettingsViewModel
 import com.fonamp.feature.settings.UpdateCheckViewModel
 import com.fonamp.provider.api.Source
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 
@@ -84,6 +88,7 @@ class RadioHolderViewModel @Inject constructor(
 
 @HiltViewModel
 class SettingsHolderViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val themeDao: ThemeDao,
     private val cache: DirectoryCache,
     private val releases: GithubReleasesClient,
@@ -94,6 +99,25 @@ class SettingsHolderViewModel @Inject constructor(
             cache = cache,
             scope = viewModelScope,
             io = Dispatchers.IO,
+            getArtworkCacheSize = { context.imageLoader.diskCache?.size ?: 0L },
+            clearArtworkCache = {
+                val coilCache = context.imageLoader.diskCache
+                val size = coilCache?.size ?: 0L
+                coilCache?.clear()
+                size
+            },
+            getDatabaseSize = {
+                val dbFile = context.getDatabasePath("fonamp.db")
+                val walFile = context.getDatabasePath("fonamp.db-wal")
+                val shmFile = context.getDatabasePath("fonamp.db-shm")
+                (if (dbFile.exists()) dbFile.length() else 0L) +
+                (if (walFile.exists()) walFile.length() else 0L) +
+                (if (shmFile.exists()) shmFile.length() else 0L)
+            },
+            getPreferencesSize = {
+                val prefsDir = File(context.applicationInfo.dataDir, "shared_prefs")
+                if (prefsDir.exists()) prefsDir.listFiles()?.sumOf { it.length() } ?: 0L else 0L
+            }
         )
     }
     val updates: UpdateCheckViewModel by lazy {

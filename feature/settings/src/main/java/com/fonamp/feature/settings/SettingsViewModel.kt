@@ -18,9 +18,15 @@ data class SettingsUiState(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val cacheEntries: Int = 0,
     val cacheBytes: Long = 0L,
+    val artworkBytes: Long = 0L,
+    val databaseBytes: Long = 0L,
+    val preferencesBytes: Long = 0L,
     /** Non-null right after a clear: confirmation carrying the freed bytes. */
     val clearConfirmation: String? = null,
-)
+) {
+    val totalBytes: Long
+        get() = cacheBytes + artworkBytes + databaseBytes + preferencesBytes
+}
 
 /**
  * Slice I: Settings state holder (settings Req 1–2, design §5).
@@ -40,6 +46,10 @@ class SettingsViewModel(
     private val cache: DirectoryCache,
     private val scope: CoroutineScope,
     private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val getArtworkCacheSize: () -> Long = { 0L },
+    private val clearArtworkCache: () -> Long = { 0L },
+    private val getDatabaseSize: () -> Long = { 0L },
+    private val getPreferencesSize: () -> Long = { 0L },
 ) {
     private val _state = MutableStateFlow(SettingsUiState())
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
@@ -62,21 +72,34 @@ class SettingsViewModel(
     fun refreshStats() {
         scope.launch {
             val stats = withContext(io) { cache.stats() }
+            val artwork = withContext(io) { getArtworkCacheSize() }
+            val dbSize = withContext(io) { getDatabaseSize() }
+            val prefsSize = withContext(io) { getPreferencesSize() }
             _state.update {
-                it.copy(cacheEntries = stats.entryCount, cacheBytes = stats.sizeBytes)
+                it.copy(
+                    cacheEntries = stats.entryCount,
+                    cacheBytes = stats.sizeBytes,
+                    artworkBytes = artwork,
+                    databaseBytes = dbSize,
+                    preferencesBytes = prefsSize,
+                )
             }
         }
     }
 
     fun clearCache() {
         scope.launch {
-            val freed = withContext(io) { cache.clear() }
+            val freedDir = withContext(io) { cache.clear() }
+            val freedArt = withContext(io) { clearArtworkCache() }
+            val freed = freedDir + freedArt
             val stats = withContext(io) { cache.stats() }
+            val artwork = withContext(io) { getArtworkCacheSize() }
             _state.update {
                 it.copy(
                     cacheEntries = stats.entryCount,
                     cacheBytes = stats.sizeBytes,
-                    clearConfirmation = "Cache cleared — ${formatBytes(freed)} freed.",
+                    artworkBytes = artwork,
+                    clearConfirmation = "Caches cleared — ${formatBytes(freed)} freed.",
                 )
             }
         }

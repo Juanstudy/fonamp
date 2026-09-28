@@ -67,7 +67,7 @@
 | SET-1 | Directory-cache entry count, size, clear action, and confirmation | Shipped |
 | SET-2 | About version from `BuildConfig`, license pointer, and source summary | Shipped |
 | SET-3 | Manual and cold-start GitHub update checks with download and installer handoff | Shipped |
-| SET-4 | Total app-storage reporting and an artwork-cache manager | Planned |
+| SET-4 | Total app-storage reporting and an artwork-cache manager | Shipped |
 
 ## Non-functional requirements
 

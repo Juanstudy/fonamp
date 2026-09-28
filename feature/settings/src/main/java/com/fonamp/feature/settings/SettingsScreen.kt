@@ -87,15 +87,19 @@ fun SettingsScreen(
 
         Text(text = "Storage", style = MaterialTheme.typography.titleMedium)
         Text(
-            text = "Directory cache: ${state.cacheEntries} entries, " +
-                "${SettingsViewModel.formatBytes(state.cacheBytes)}",
+            text = "Total app storage: ${SettingsViewModel.formatBytes(state.totalBytes)}\n" +
+                "• Directory cache: ${state.cacheEntries} entries, ${SettingsViewModel.formatBytes(state.cacheBytes)}\n" +
+                "• Artwork cache: ${SettingsViewModel.formatBytes(state.artworkBytes)}\n" +
+                "• Database: ${SettingsViewModel.formatBytes(state.databaseBytes)}\n" +
+                "• Preferences: ${SettingsViewModel.formatBytes(state.preferencesBytes)}",
             modifier = Modifier.testTag("cache-stats"),
+            style = MaterialTheme.typography.bodyMedium,
         )
         Button(
             onClick = { showClearDialog = true },
             modifier = Modifier.testTag("clear-cache"),
         ) {
-            Text("Clear directory cache")
+            Text("Clear all caches")
         }
 
         Text(text = "About", style = MaterialTheme.typography.titleMedium)
@@ -132,8 +136,8 @@ fun SettingsScreen(
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("Clear directory cache?") },
-            text = { Text("Cached station lists will be refetched on next visit.") },
+            title = { Text("Clear all caches?") },
+            text = { Text("Cached station lists and radio artworks will be refetched on next visit. Your favorites and settings will not be affected.") },
             confirmButton = {
                 TextButton(
                     onClick = {
